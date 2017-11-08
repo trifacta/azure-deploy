@@ -5,9 +5,17 @@
     "applicationName": {
       "type": "string",
       "metadata": {
-        "description": "Unique application name for the Trifacta edge node"
+        "description": "Unique (per-cluster) application name for the Trifacta edge node"
       },
       "defaultValue": "trifacta"
+    },
+    "subDomainSuffix": {
+      "type": "string",
+      "maxLength": 3,
+      "metadata": {
+        "description": "Unique (per cluster) three-character alphanumeric string used in the application's DNS name."
+      },
+      "defaultValue": "tri"
     },
     "clusterName": {
       "type": "string",
@@ -33,19 +41,14 @@
         "Standard_D13_v2",
         "Standard_D14_v2"
       ]
-    },
-    "subDomainSuffix": {
-      "type": "string",
-      "metadata": {
-        "description": "Unique (per cluster) three-character alphanumeric string used in the application's DNS name. The DNS name will be of the format: *.apps.azurehdinsight.net."
-      },
-      "defaultValue": "tri"
     }
   },
   "variables": {
-    "installBaseUri": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-hdinsight-linux-add-edge-node",
-    "installScriptDir": "scripts",
-    "installScript1": "EmptyNodeSetup.sh"
+    "baseUri": "https://raw.githubusercontent.com/Trifacta/azure-deploy/4.2.0",
+    "binDir": "bin",
+    "setupScript": "prepare-edge-node.sh",
+    "trifactaVersion": "420",
+    "armVersion": "1"
   },
   "resources": [
     {
@@ -67,11 +70,10 @@
         },
         "installScriptActions": [
           {
-            "name": "[concat('trifacta-420-1-', uniquestring(parameters('applicationName')))]",
-            "uri": "[concat(variables('installBaseUri'), '/', variables('installScriptDir'), '/', variables('installScript1'))]",
+            "name": "[concat('trifacta-', variables('trifactaVersion'), '-', variables('armVersion'), '-', uniquestring(parameters('applicationName')))]",
+            "uri": "[concat(variables('baseUri'), '/', variables('binDir'), '/', variables('setupScript'))]",
             "parameters": "",
             "roles": ["edgenode"]
-
           }
         ],
         "uninstallScriptActions": [],
