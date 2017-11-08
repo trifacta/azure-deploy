@@ -48,7 +48,7 @@
     "binDir": "bin",
     "setupScript": "prepare-edge-node.sh",
     "trifactaVersion": "420",
-    "armVersion": "1"
+    "armTemplateVersion": "1"
   },
   "resources": [
     {
@@ -70,7 +70,7 @@
         },
         "installScriptActions": [
           {
-            "name": "[concat('trifacta-', variables('trifactaVersion'), '-', variables('armVersion'), '-', uniquestring(parameters('applicationName')))]",
+            "name": "[concat('trifacta-', variables('trifactaVersion'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
             "uri": "[concat(variables('baseUri'), '/', variables('binDir'), '/', variables('setupScript'))]",
             "parameters": "",
             "roles": ["edgenode"]
