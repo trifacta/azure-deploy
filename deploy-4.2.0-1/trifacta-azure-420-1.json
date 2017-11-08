@@ -1,0 +1,95 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "applicationName": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique application name for the Trifacta edge node"
+      },
+      "defaultValue": "trifacta"
+    },
+    "clusterName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the existing HDInsight cluster to be used"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual machine type for the Trifacta edge node"
+      },
+      "defaultValue": "Standard_D4_v2",
+      "allowedValues": [
+        "Standard_A4",
+        "Standard_A6",
+        "Standard_A7",
+        "Standard_A10",
+        "Standard_A11",
+        "Standard_D4_v2",
+        "Standard_D5_v2",
+        "Standard_D12_v2",
+        "Standard_D13_v2",
+        "Standard_D14_v2"
+      ]
+    },
+    "subDomainSuffix": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique (per cluster) three-character alphanumeric string used in the application's DNS name. The DNS name will be of the format: *.apps.azurehdinsight.net."
+      },
+      "defaultValue": "tri"
+    }
+  },
+  "variables": {
+    "installBaseUri": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-hdinsight-linux-add-edge-node",
+    "installScriptDir": "scripts",
+    "installScript1": "EmptyNodeSetup.sh"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('clusterName'), '/', parameters('applicationName'))]",
+      "type": "Microsoft.HDInsight/clusters/applications",
+      "apiVersion": "2015-03-01-preview",
+      "dependsOn": [],
+      "properties": {
+        "computeProfile": {
+          "roles": [
+            {
+              "name": "edgenode",
+              "targetInstanceCount": 1,
+              "hardwareProfile": {
+                "vmSize": "[parameters('vmSize')]"
+              }
+            }
+          ]
+        },
+        "installScriptActions": [
+          {
+            "name": "[concat('trifacta-420-1-', uniquestring(parameters('applicationName')))]",
+            "uri": "[concat(variables('installBaseUri'), '/', variables('installScriptDir'), '/', variables('installScript1'))]",
+            "parameters": "",
+            "roles": ["edgenode"]
+
+          }
+        ],
+        "uninstallScriptActions": [],
+        "httpsEndpoints": [
+          {
+            "subDomainSuffix": "[parameters('subDomainSuffix')]",
+            "destinationPort": 3005,
+            "accessModes": ["webpage"]
+          }
+        ],
+        "applicationType": "CustomApplication"
+      }
+    }
+  ],
+  "outputs": {
+    "application": {
+      "type": "object",
+      "value": "[reference(resourceId('Microsoft.HDInsight/clusters/applications/', parameters('clusterName'), parameters('applicationName')))]"
+    }
+  }
+}
