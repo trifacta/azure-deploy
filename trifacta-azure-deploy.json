@@ -2,6 +2,16 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "trifactaVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "Trifacta application version to deploy"
+      },
+      "defaultValue": "4.2.0",
+      "allowedValues": [
+        "4.2.0"
+      ]
+    },
     "applicationName": {
       "type": "string",
       "metadata": {
@@ -44,10 +54,10 @@
     }
   },
   "variables": {
-    "baseUri": "https://raw.githubusercontent.com/Trifacta/azure-deploy/4.2.0",
+    "baseUri": "[concat('https://raw.githubusercontent.com/Trifacta/azure-deploy/', parameters('trifactaVersion'))]",
     "binDir": "bin",
     "setupScript": "prepare-edge-node.sh",
-    "trifactaVersion": "420",
+    "trifactaVersionShort": "[replace(parameters('trifactaVersion'), '.', '')]",
     "armTemplateVersion": "1"
   },
   "resources": [
@@ -70,7 +80,7 @@
         },
         "installScriptActions": [
           {
-            "name": "[concat('trifacta-', variables('trifactaVersion'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
+            "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
             "uri": "[concat(variables('baseUri'), '/', variables('binDir'), '/', variables('setupScript'))]",
             "parameters": "",
             "roles": ["edgenode"]
