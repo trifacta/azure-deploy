@@ -5,12 +5,6 @@ source "$bin_dir/util.sh"
 
 export DEBIAN_FRONTEND="noninteractive"
 
-LogInfo "Removing stale packages"
-apt -y autoremove
-
-LogInfo "Updating curl, wget"
-apt-get -y install curl wget
-
 LogInfo "Setting up Trifacta dependency repository"
 curl -s "https://packagecloud.io/install/repositories/trifacta/dependencies/script.deb.sh" | bash
 
