@@ -1,9 +1,14 @@
 #!/bin/bash
 
-bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$bin_dir/util.sh"
-
+# suppress apt-get's ncurses
 export DEBIAN_FRONTEND="noninteractive"
+
+function LogInfo()    { echo -e "$(date +'%Y-%m-%d %H:%M:%S') [INFO] $1" ; }
+function LogWarning() { echo -e "$(date +'%Y-%m-%d %H:%M:%S') [WARNING] $1" ; }
+function LogError()   { echo -e "$(date +'%Y-%m-%d %H:%M:%S') [ERROR] $1" && exit 1; }
+
+LogInfo "Updating curl and wget"
+apt-get -y install curl wget
 
 LogInfo "Setting up Trifacta dependency repository"
 curl -s "https://packagecloud.io/install/repositories/trifacta/dependencies/script.deb.sh" | bash
