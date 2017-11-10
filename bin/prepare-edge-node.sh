@@ -2,10 +2,61 @@
 
 # suppress apt-get's ncurses
 export DEBIAN_FRONTEND="noninteractive"
+export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
 function LogInfo()    { echo -e "$(date +'%Y-%m-%d %H:%M:%S') [INFO] $1" ; }
 function LogWarning() { echo -e "$(date +'%Y-%m-%d %H:%M:%S') [WARNING] $1" ; }
 function LogError()   { echo -e "$(date +'%Y-%m-%d %H:%M:%S') [ERROR] $1" && exit 1; }
+
+function InstallWebWasb() {
+  # Adapted from https://raw.githubusercontent.com/hdinsight/Iaas-Applications/master/Hue/scripts/Hue-install_v0.sh
+  local tarfile="webwasb-tomcat.tar.gz"
+  local tarfile_uri="https://hdiconfigactions.blob.core.windows.net/linuxhueconfigactionv01/$tarfile"
+  local tmpdir="/tmp/webwasb"
+  local installdir="/usr/share/webwasb-tomcat"
+
+  LogInfo "Removing WebWasb installation and temporary folder"
+  rm -rf $installdir $tmpdir
+
+  LogInfo "Downloading and untarring webwasb tarball"
+  mkdir $tmpdir
+  wget $tarfile_uri -P $tmpdir
+  pushd $tmpdir &> /dev/null
+  tar -xzf $tarfile -C /usr/share/
+  popd &> /dev/null
+  rm -rf $tmpdir
+
+  LogInfo "Adding webwasb user"
+  useradd -r webwasb
+
+  LogInfo "Creating WebWasb service"
+  sed -i "s|JAVAHOMEPLACEHOLDER|$JAVA_HOME|g" $installdir/upstart/webwasb.conf
+  chown -R webwasb:webwasb $installdir
+  cp -f $installdir/upstart/webwasb.conf /etc/init/
+  cat >/etc/systemd/system/multi-user.target.wants/webwasb.service <<EOL
+[[Unit]
+Description=webwasb service
+
+[Service]
+Type=simple
+User=webwasb
+Group=webwasb
+Restart=always
+RestartSec=5
+Environment="JAVA_HOME=$JAVA_HOME"
+Environment="CATALINA_HOME=/usr/share/webwasb-tomcat"
+ExecStart=/usr/share/webwasb-tomcat/bin/catalina.sh run
+ExecStopPost=rm -rf $CATALINA_HOME/temp/*
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+  LogInfo "Starting WebWasb service"
+  systemctl daemon-reload
+  systemctl stop webwasb.service
+  systemctl start webwasb.service
+}
 
 LogInfo "Updating curl and wget"
 apt-get -y install curl wget
@@ -47,3 +98,5 @@ chmod -R 755 $python_dir/dist-packages/setuptools*
 chmod -R 755 $python_dir/dist-packages/retrying*
 chmod -R 755 $python_dir/dist-packages/requests*
 chmod -R 755 $python_dir/dist-packages/PyYAML*
+
+InstallWebWasb
