@@ -1,0 +1,138 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the existing HDInsight cluster to be used"
+      }
+    },
+    "VMSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual machine type for the Trifacta edge node"
+      },
+      "defaultValue": "Standard_D13_v2",
+      "allowedValues": [
+        "Standard_A4",
+        "Standard_A6",
+        "Standard_A7",
+        "Standard_A10",
+        "Standard_A11",
+        "Standard_D4_v2",
+        "Standard_D5_v2",
+        "Standard_D12_v2",
+        "Standard_D13_v2",
+        "Standard_D14_v2",
+        "Standard_D15_v2"
+      ]
+    },
+    "trifactaVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "Trifacta application version to deploy"
+      },
+      "defaultValue": "4.2.1",
+      "allowedValues": [
+        "4.2.0",
+        "4.2.1"
+      ]
+    },
+    "applicationName": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique (per-cluster) application name for the Trifacta edge node"
+      },
+      "defaultValue": "trifacta"
+    },
+    "subdomainApplicationURISuffix": {
+      "type": "string",
+      "maxLength": 3,
+      "metadata": {
+        "description": "Unique (per cluster) three-character alphanumeric string used in the application's DNS name."
+      },
+      "defaultValue": "tri"
+    },
+    "ADLSDirectoryID": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Active Directory directory ID for the registered application. Required when HDI default storage is ADLS."
+      },
+      "defaultValue": "<AAD directory ID>"
+    },
+    "ADLSApplicationID": {
+      "type": "string",
+      "metadata": {
+        "description": "Registered application's ID. Required when HDI default storage is ADLS."
+      },
+      "defaultValue": "<Application ID>"
+    },
+    "ADLSSecret": {
+      "type": "secureString",
+      "metadata": {
+        "description": "Registered application's key for access to ADLS. Required when HDI default storage is ADLS."
+      },
+      "defaultValue": "<Secret>"
+    }
+  },
+  "variables": {
+    "trifactaVersionShort": "[replace(parameters('trifactaVersion'), '.', '')]",
+    "branch": "master",
+    "baseUri": "[concat('https://raw.githubusercontent.com/Trifacta/azure-deploy/', variables('branch'))]",
+    "armTemplateVersion": "1",
+    "galleryPackageIdentity": "wrangler-enterprise",
+    "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public&sig=hUtT6TXPidWpAXzkBZOBBXQXoUhVXWSmkJLyedA58bA%3D&sv=2016-05-31"
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('clusterName'), '/', parameters('applicationName'))]",
+      "type": "Microsoft.HDInsight/clusters/applications",
+      "apiVersion": "2015-03-01-preview",
+      "dependsOn": [],
+      "properties": {
+        "marketPlaceIdentifier": "[variables('galleryPackageIdentity')]",
+        "computeProfile": {
+          "roles": [
+            {
+              "name": "edgenode",
+              "targetInstanceCount": 1,
+              "hardwareProfile": {
+                "vmSize": "[parameters('VMSize')]"
+              }
+            }
+          ]
+        },
+        "installScriptActions": [
+          {
+            "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
+            "uri": "[concat(variables('baseUri'), '/bin/deploy.sh')]",
+            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('ADLSDirectoryID'), '\" -a \"', parameters('ADLSApplicationID'), '\" -S \"', parameters('ADLSSecret'), '\"')]",
+            "roles": ["edgenode"]
+          }
+        ],
+        "uninstallScriptActions": [
+          {
+            "name": "[concat('trifacta-uninstall-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
+            "uri": "[concat(variables('baseUri'), '/bin/uninstall.sh')]",
+            "roles": ["edgenode"]
+          }
+        ],
+        "httpsEndpoints": [
+          {
+            "subDomainSuffix": "[parameters('subdomainApplicationURISuffix')]",
+            "destinationPort": 3005,
+            "accessModes": ["webpage"]
+          }
+        ],
+        "applicationType": "CustomApplication"
+      }
+    }
+  ],
+  "outputs": {
+    "application": {
+      "type": "object",
+      "value": "[reference(resourceId('Microsoft.HDInsight/clusters/applications/', parameters('clusterName'), parameters('applicationName')))]"
+    }
+  }
+}
