@@ -2,7 +2,7 @@
 
 # Adapted from https://github.com/hdinsight/Iaas-Applications/blob/master/Hue/scripts/Hue-install_v0.sh
 
-set -eo pipefail
+set -exo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/util.sh"
 
@@ -58,7 +58,7 @@ LogInfo "Adding webwasb user"
 if [[ ! $(getent passwd webwasb) ]]; then
   useradd -r "$webwasb_user"
 fi
-set -eo pipefail
+set -exo pipefail
 
 LogInfo "Creating WebWasb service"
 sed -i "s|JAVAHOMEPLACEHOLDER|$JAVA_HOME|g" "$webwasb_conf"
