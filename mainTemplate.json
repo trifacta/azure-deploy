@@ -8,7 +8,7 @@
         "description": "Name of the existing HDInsight cluster to be used"
       }
     },
-    "VMSize": {
+    "edgeNodeSize": {
       "type": "string",
       "metadata": {
         "description": "Virtual machine type for the Trifacta edge node"
@@ -59,21 +59,28 @@
       "metadata": {
         "description": "Azure Active Directory directory ID for the registered application. Required when HDI default storage is ADLS."
       },
-      "defaultValue": "<AAD directory ID>"
+      "defaultValue": "<ADLS_AAD_DIRECTORY_ID>"
     },
     "ADLSApplicationID": {
       "type": "string",
       "metadata": {
         "description": "Registered application's ID. Required when HDI default storage is ADLS."
       },
-      "defaultValue": "<Application ID>"
+      "defaultValue": "<ADLS_APPLICATION_ID>"
     },
     "ADLSSecret": {
       "type": "secureString",
       "metadata": {
         "description": "Registered application's key for access to ADLS. Required when HDI default storage is ADLS."
       },
-      "defaultValue": "<Secret>"
+      "defaultValue": "<ADLS_APPLICATION_SECRET>"
+    },
+    "galleryPackageIdentity": {
+      "type": "string",
+      "metadata": {
+          "description": "Identity of the gallery package for the application."
+      },
+      "defaultValue": "wrangler-enterprise"
     }
   },
   "variables": {
@@ -81,7 +88,6 @@
     "branch": "master",
     "baseUri": "[concat('https://raw.githubusercontent.com/Trifacta/azure-deploy/', variables('branch'))]",
     "armTemplateVersion": "1",
-    "galleryPackageIdentity": "wrangler-enterprise",
     "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public&sig=hUtT6TXPidWpAXzkBZOBBXQXoUhVXWSmkJLyedA58bA%3D&sv=2016-05-31"
   },
   "resources": [
@@ -91,14 +97,14 @@
       "apiVersion": "2015-03-01-preview",
       "dependsOn": [],
       "properties": {
-        "marketPlaceIdentifier": "[variables('galleryPackageIdentity')]",
+        "marketPlaceIdentifier": "[parameters('galleryPackageIdentity')]",
         "computeProfile": {
           "roles": [
             {
               "name": "edgenode",
               "targetInstanceCount": 1,
               "hardwareProfile": {
-                "vmSize": "[parameters('VMSize')]"
+                "vmSize": "[parameters('edgeNodeSize')]"
               }
             }
           ]

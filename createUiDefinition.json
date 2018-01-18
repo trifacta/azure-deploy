@@ -2,7 +2,7 @@
   "handler": "Microsoft.HDInsight",
   "version": "0.0.1-preview",
   "clusterFilters": {
-      "types": ["Hadoop", "Spark"],
+      "types": ["Hadoop", "Spark", "HBase"],
       "tiers": ["Standard", "Premium"],
       "versions": ["3.5", "3.6"]
   }
