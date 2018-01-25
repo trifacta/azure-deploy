@@ -13,19 +13,19 @@
       "metadata": {
         "description": "Virtual machine type for the Trifacta edge node"
       },
-      "defaultValue": "Standard_D13_v2",
+      "defaultValue": "Standard_D13_V2",
       "allowedValues": [
         "Standard_A4",
         "Standard_A6",
         "Standard_A7",
         "Standard_A10",
         "Standard_A11",
-        "Standard_D4_v2",
-        "Standard_D5_v2",
-        "Standard_D12_v2",
-        "Standard_D13_v2",
-        "Standard_D14_v2",
-        "Standard_D15_v2"
+        "Standard_D4_V2",
+        "Standard_D5_V2",
+        "Standard_D12_V2",
+        "Standard_D13_V2",
+        "Standard_D14_V2",
+        "Standard_D15_V2"
       ]
     },
     "trifactaVersion": {
@@ -54,26 +54,26 @@
       },
       "defaultValue": "tri"
     },
-    "ADLSDirectoryID": {
+    "DataLakeStoreDirectoryID": {
       "type": "string",
       "metadata": {
-        "description": "Azure Active Directory directory ID for the registered application. Required when HDI default storage is ADLS."
+        "description": "Azure Active Directory directory ID for the registered application. Required when HDInsight default storage is Data Lake Store."
       },
-      "defaultValue": "<ADLS_AAD_DIRECTORY_ID>"
+      "defaultValue": "<AAD_DIRECTORY_ID>"
     },
-    "ADLSApplicationID": {
+    "DataLakeStoreApplicationID": {
       "type": "string",
       "metadata": {
-        "description": "Registered application's ID. Required when HDI default storage is ADLS."
+        "description": "Registered application's ID. Required when HDInsight default storage is Data Lake Store."
       },
-      "defaultValue": "<ADLS_APPLICATION_ID>"
+      "defaultValue": "<APPLICATION_ID>"
     },
-    "ADLSSecret": {
+    "DataLakeStoreSecret": {
       "type": "secureString",
       "metadata": {
-        "description": "Registered application's key for access to ADLS. Required when HDI default storage is ADLS."
+        "description": "Registered application's key for access to Data Lake Store. Required when HDInsight default storage is Data Lake Store."
       },
-      "defaultValue": "<ADLS_APPLICATION_SECRET>"
+      "defaultValue": "<APPLICATION_SECRET>"
     },
     "galleryPackageIdentity": {
       "type": "string",
@@ -113,7 +113,7 @@
           {
             "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
             "uri": "[concat(variables('baseUri'), '/bin/deploy.sh')]",
-            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('ADLSDirectoryID'), '\" -a \"', parameters('ADLSApplicationID'), '\" -S \"', parameters('ADLSSecret'), '\"')]",
+            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DataLakeStoreDirectoryID'), '\" -a \"', parameters('DataLakeStoreApplicationID'), '\" -S \"', parameters('DataLakeStoreSecret'), '\"')]",
             "roles": ["edgenode"]
           }
         ],
