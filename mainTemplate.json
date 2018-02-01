@@ -88,7 +88,7 @@
     "branch": "master",
     "baseUri": "[concat('https://raw.githubusercontent.com/Trifacta/azure-deploy/', variables('branch'))]",
     "armTemplateVersion": "1",
-    "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public&sig=hUtT6TXPidWpAXzkBZOBBXQXoUhVXWSmkJLyedA58bA%3D&sv=2016-05-31"
+    "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public-read&sig=ksMPhDkLpJYPEXnRNp4vAdo6QQ9ulpP%2BM4Gsi/nea%2Bg%3D&sv=2016-05-31"
   },
   "resources": [
     {
