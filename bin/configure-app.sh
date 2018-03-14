@@ -4,27 +4,35 @@ set -exo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/util.sh"
 
-adls_directory_id=""
-adls_application_id=""
-adls_secret=""
+directory_id=""
+application_id=""
+secret=""
+wasb_sas_token_id=""
+key_vault_url=""
+
+# TODO: Figure out what's going on with spark-job-service.classpath
 
 function Usage() {
   cat << EOF
 Usage: "$0 [options]"
 
 Options:
-  -d <dir ID>    Azure Active Directory directory ID for the registered application. Required when HDI default storage is ADLS. [default: $adls_directory_id]
-  -a <app ID>    Registered application\'s ID. Required when HDI default storage is ADLS. [default: $adls_application_id]
-  -S <secret>    Registered application\'s key for access to ADLS. Required when HDI default storage is ADLS. [default: $adls_secret]
+  -d <dir ID>    Azure Active Directory directory ID for the registered application. Required when HDI default storage is ADLS. [default: $directory_id]
+  -a <app ID>    Registered application\'s ID. Required when HDI default storage is ADLS. [default: $application_id]
+  -S <secret>    Registered application\'s key for access to ADLS. Required when HDI default storage is ADLS. [default: $secret]
+  -T <sas token ID> Shared Access Signature token identifier. Required when HDI storage is WASB.
+  -K <key vault URL> Azure Key Vault URL. Required when HDI storage is WASB.
   -h             This message.
 EOF
 }
 
-while getopts "u:d:a:S:h" opt; do
+while getopts "u:d:a:S:T:K:h" opt; do
   case $opt in
-    d  ) adls_directory_id=$OPTARG ;;
-    a  ) adls_application_id=$OPTARG ;;
-    S  ) adls_secret=$OPTARG ;;
+    d  ) directory_id=$OPTARG ;;
+    a  ) application_id=$OPTARG ;;
+    S  ) secret=$OPTARG ;;
+    T  ) wasb_sas_token_id=$OPTARG ;;
+    K  ) key_vault_url=$OPTARG ;;
     h  ) Usage && exit 0 ;;
     \? ) LogError "Invalid option: -$OPTARG" ;;
     :  ) LogError "Option -$OPTARG requires an argument." ;;
@@ -135,6 +143,27 @@ function GetDefaultFSType() {
   GetDefaultFS | cut -d: -f1
 }
 
+function ConfigureSecureTokenService() {
+  # Secure Token Service: Refresh Token Encryption Key
+  local refresh_token_encryption_key=$(RandomString 16 | base64)
+
+  jq ".[\"secure-token-service\"].systemProperties[\"server.port\"] = \"8090\" |
+    .[\"secure-token-service\"].systemProperties[\"com.trifacta.services.secure_token_service.refresh_token_encryption_key\"] = \"$refresh_token_encryption_key\"" \
+    "$triconf" | sponge "$triconf"
+}
+
+function ConfigureAzureCommon() {
+  CheckValueSetOrExit "Directory ID" "$directory_id"
+  CheckValueSetOrExit "Application ID" "$application_id"
+  CheckValueSetOrExit "Secret" "$secret"
+
+  jq ".azure.directoryid = \"$directory_id\" |
+    .azure.applicationid = \"$application_id\" |
+    .azure.secret = \"$secret\" |
+    .azure.keyVaultUrl = \"$key_vault_url\"" \
+    "$triconf" | sponge "$triconf"
+}
+
 function ConfigureADLS() {
   local adls_host=$(GetHadoopProperty "dfs.adls.home.hostname" "$core_site")
   local adls_uri="adl://${adls_host}"
@@ -143,9 +172,6 @@ function ConfigureADLS() {
   LogInfo "Configuring ADLS"
   CheckValueSetOrExit "ADLS URI" "$adls_uri"
   CheckValueSetOrExit "ADLS Prefix" "$adls_prefix"
-  CheckValueSetOrExit "Directory ID" "$adls_directory_id"
-  CheckValueSetOrExit "Application ID" "$adls_application_id"
-  CheckValueSetOrExit "Secret" "$adls_secret"
 
   jq ".webapp.storageProtocol = \"hdfs\" |
     .hdfs.username = \"$trifacta_user\" |
@@ -165,37 +191,28 @@ function ConfigureADLS() {
     .hdfs.pathsConfig.tempFiles = \"${adls_prefix}/trifacta/tempfiles\" |
     .hdfs.pathsConfig.sparkEventLogs = \"${adls_prefix}/trifacta/sparkeventlogs\" |
     .hdfs.pathsConfig.batchResults = \"${adls_prefix}/trifacta/queryResults\" |
-    .azure.directoryid = \"$adls_directory_id\" |
-    .azure.mode = \"system\" |
+    .azure.adl.mode = \"system\" |
     .azure.adl.enabled = true |
-    .azure.adl.store = \"$adls_uri\" |
-    .azure.adl.applicationid = \"$adls_application_id\" |
-    .azure.adl.secret = \"$adls_secret\"" \
+    .azure.adl.store = \"$adls_uri\"" \
     "$triconf" | sponge "$triconf"
 }
 
 function ConfigureWASB() {
   local wasb_service_name=$(GetDefaultFS)
+  local wasb_container=$(echo "$wasb_service_name" | cut -d@ -f1 | cut -d/ -f3)
   local wasb_host=$(echo "$wasb_service_name" | cut -d@ -f2)
 
   LogInfo "Configuring WASB"
   CheckValueSetOrExit "WASB service name" "$wasb_service_name"
   CheckValueSetOrExit "WASB Host" "$wasb_host"
+  CheckValueSetOrExit "WASB Shared Access Signature token ID" "$wasb_sas_token_id"
 
-  jq ".webapp.storageProtocol = \"hdfs\" |
-    .hdfs.username = \"$trifacta_user\" |
-    .hdfs.enabled = true |
-    .hdfs.protocolOverride = \"wasb\" |
-    .hdfs.namenode.host = \"$wasb_host\" |
-    .hdfs.namenode.port = 50073 |
-    .hdfs.webhdfs.httpfs = true |
-    .hdfs.webhdfs.ssl.enabled = false |
-    .hdfs.webhdfs.host = \"localhost\" |
-    .hdfs.webhdfs.version = \"/WebWasb/webhdfs/v1\" |
-    .hdfs.webhdfs.credentials.username = \"$trifacta_user\" |
-    .hdfs.webhdfs.port = 50073 |
-    .azure.mode = \"system\" |
-    .azure.adl.enabled = false" \
+  jq ".webapp.storageProtocol = \"wasbs\" |
+    .hdfs.enabled = false |
+    .azure.wasb.enabled = true |
+    .azure.wasb.defaultStore.blobHost = \"$wasb_host\" |
+    .azure.wasb.defaultStore.container = \"$wasb_container\" |
+    .azure.wasb.defaultStore.sasTokenId = \"$wasb_sas_token_id\"" \
     "$triconf" | sponge "$triconf"
 }
 
@@ -216,7 +233,7 @@ function ConfigureHDP() {
     .[\"ml-service\"].autoRestart = true |
     .[\"scheduling-service\"].autoRestart = true |
     .[\"spark-job-service\"].autoRestart = true |
-    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:/etc/hadoop/conf/:%(topOfTree)s/conf/hadoop-site/:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/services/spark-job-server/build/bundle/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/%(hadoopBundleJar)s\" |
+    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:/etc/hadoop/conf/:%(topOfTree)s/conf/hadoop-site/:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/%(sparkBundleJar)s:%(topOfTree)s/%(hadoopBundleJar)s\" |
     .[\"spark-job-service\"].jvmOptions = [\"-Xmx128m\", \"-Dhdp.version=${hdp_full_version}\"] |
     .[\"spark-job-service\"].env.SPARK_DIST_CLASSPATH = \"/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hive-client/lib/*\" |
     .[\"spark-job-service\"].env.HADOOP_CONF_DIR = \"/etc/hadoop/conf\" |
@@ -420,29 +437,6 @@ function ConfigureEdgeNode() {
     "$triconf" | sponge "$triconf"
 }
 
-function WorkaroundGatewayBinFiltering() {
-  local tri_file=$(ls "$trifacta_basedir/webapp/src/client/js/entrypoints/trifacta."*.bundle.js)
-  local loader_file="$trifacta_basedir/webapp/src/server/views/photon-pexe-loader.jade"
-  local nginx_conf="$trifacta_basedir/conf/nginx.conf"
-
-  LogInfo "Working around Gateway filtering of downloads containing \"bin\""
-  BackupFile "$tri_file"
-  BackupFile "$loader_file"
-  BackupFile "$nginx_conf"
-
-  LogInfo "Symlinking photon-server files up one directory level"
-  local photon_dir="$trifacta_basedir/photon/dist/pnacl/photon"
-  for photon_file in "$photon_dir/bin/photon-server"*; do
-    filename=$(basename $photon_file)
-    ln -sf "$photon_dir/bin/$filename" "$photon_dir/$filename"
-  done
-
-  LogInfo "Modifying application to use new paths"
-  sed -i 's@/photon/bin@/photon/bun@g' "$tri_file"
-  sed -i 's@/bin/photon-server.nmf@/photon-server.nmf@g' "$loader_file"
-  sed -i 's@/photon/(bin/.*)@/photon/bun/(.*)@g' "$nginx_conf"
-}
-
 function StartTrifacta() {
   LogInfo "Starting Trifacta"
   chmod 666 "$triconf"
@@ -485,9 +479,9 @@ ConfigurePostgres
 CreateDBRoles
 
 ConfigureEdgeNode
+ConfigureSecureTokenService
+ConfigureAzureCommon
 ConfigureHDI
-
-WorkaroundGatewayBinFiltering
 
 StartTrifacta
 CreateHiveConnection
