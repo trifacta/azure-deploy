@@ -66,30 +66,30 @@
     "DirectoryID": {
       "type": "string",
       "metadata": {
-        "description": "Azure Active Directory directory ID for the registered application. Required when HDInsight default storage is Data Lake Store."
+        "description": "Azure Active Directory directory ID for the registered application. Required."
       },
       "defaultValue": "<AAD_DIRECTORY_ID>"
     },
     "ApplicationID": {
       "type": "string",
       "metadata": {
-        "description": "Registered application's ID. Required when HDInsight default storage is Data Lake Store."
+        "description": "Registered application's ID. Required."
       },
       "defaultValue": "<APPLICATION_ID>"
     },
     "Secret": {
       "type": "secureString",
       "metadata": {
-        "description": "Registered application's key for access to Data Lake Store. Required when HDInsight default storage is Data Lake Store."
+        "description": "Registered application's key for access to Data Lake Store. Required."
       },
       "defaultValue": "<APPLICATION_SECRET>"
     },
     "KeyVaultUrl": {
       "type": "string",
       "metadata": {
-        "description": "Key Vault URL. Required when HDInsight default storage is Blob Storage."
+        "description": "Key Vault URL. Required when either HDInsight default storage is Blob Storage, or when using Azure Active Directory authentication."
       },
-      "defaultValue": "https://<KEY_VAULT_NAME>.vault.azure.net/"
+      "defaultValue": "https://KEY_VAULT_NAME.vault.azure.net/"
     },
     "SasTokenId": {
       "type": "string",
