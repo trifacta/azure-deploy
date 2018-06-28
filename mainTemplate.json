@@ -25,10 +25,6 @@
       "defaultValue": "Standard_D13_V2",
       "allowedValues": [
         "Standard_A4",
-        "Standard_A6",
-        "Standard_A7",
-        "Standard_A10",
-        "Standard_A11",
         "Standard_D4_V2",
         "Standard_D5_V2",
         "Standard_D12_V2",
