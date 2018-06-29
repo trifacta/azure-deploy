@@ -88,6 +88,7 @@ apt-get install -y openjdk-8-jre-headless postgresql-9.3 python-psycopg2
 strict_dependencies=$(dpkg -I "$trifacta_deb_path" | grep -oP ' Depends: \K.*' | tr -d " ()" | tr , '\n' | grep -v ">" | grep = | tr '\n' ' ')
 LogInfo "Installing strict dependencies ($strict_dependencies)"
 apt-get install -y $strict_dependencies
+apt-mark hold $strict_dependencies
 
 LogInfo "Installing \"$trifacta_deb_path\""
 apt-get install -y "$trifacta_deb_path"
