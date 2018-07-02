@@ -446,7 +446,7 @@ function WorkaroundGatewayBinFiltering() {
 function StartTrifacta() {
   LogInfo "Starting Trifacta"
   chmod 666 "$triconf"
-  service trifacta restart
+  service trifacta restart || true
 }
 
 function CreateHiveConnection() {
