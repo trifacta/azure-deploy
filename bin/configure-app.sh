@@ -152,6 +152,15 @@ function ConfigureSecureTokenService() {
     "$triconf" | sponge "$triconf"
 }
 
+function ConfigureUdfService() {
+  LogInfo "Configuring UDF service"
+
+  # The edge node on HDI clusters doesn't handle websocket compression correctly
+  # Turning it off sustains websocket connections and udfs work with this change
+  local jvm_options="-Dorg.apache.tomcat.websocket.DISABLE_BUILTIN_EXTENSIONS=true"
+  jq ".[\"udf-service\"].jvmOptions = [\"$jvm_options\"]" "$triconf" | sponge "$triconf"
+}
+
 function ConfigureAzureCommon() {
   CheckValueSetOrExit "Directory ID" "$directory_id"
   CheckValueSetOrExit "Application ID" "$application_id"
@@ -480,6 +489,7 @@ CreateDBRoles
 
 ConfigureEdgeNode
 ConfigureSecureTokenService
+ConfigureUdfService
 ConfigureAzureCommon
 ConfigureHDI
 
