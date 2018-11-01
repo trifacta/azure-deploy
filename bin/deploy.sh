@@ -3,7 +3,7 @@
 set -exo pipefail
 
 version="4.2.1"
-branch="master"
+branch="release/4.2"
 adls_directory_id="ADLS_DIRECTORY_ID"
 adls_application_id="ADLS_APPLICATION_ID"
 adls_secret="ADLS_APPLICATION_SECRET"
