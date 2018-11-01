@@ -8,18 +8,23 @@
         "description": "Name of the existing HDInsight cluster to be used"
       }
     },
+    "galleryPackageIdentity": {
+      "type": "string",
+      "metadata": {
+        "description": "Identity of the gallery package for the application.",
+        "trifactaComment": "Do not change this key."
+      },
+      "defaultValue": "wrangler-enterprise"
+    },
     "edgeNodeSize": {
       "type": "string",
       "metadata": {
-        "description": "Virtual machine type for the Trifacta edge node"
+        "description": "Virtual machine type for the Trifacta edge node",
+        "trifactaComment": "Do not change this key."
       },
       "defaultValue": "Standard_D13_V2",
       "allowedValues": [
         "Standard_A4",
-        "Standard_A6",
-        "Standard_A7",
-        "Standard_A10",
-        "Standard_A11",
         "Standard_D4_V2",
         "Standard_D5_V2",
         "Standard_D12_V2",
@@ -33,16 +38,16 @@
       "metadata": {
         "description": "Trifacta application version to deploy"
       },
-      "defaultValue": "4.2.1",
+      "defaultValue": "5.0.0",
       "allowedValues": [
-        "4.2.0",
-        "4.2.1"
+        "5.0.0"
       ]
     },
     "applicationName": {
       "type": "string",
       "metadata": {
-        "description": "Unique (per-cluster) application name for the Trifacta edge node"
+        "description": "Unique (per-cluster) application name for the Trifacta edge node",
+        "trifactaComment": "Do not change this key."
       },
       "defaultValue": "trifacta"
     },
@@ -54,43 +59,63 @@
       },
       "defaultValue": "tri"
     },
-    "DataLakeStoreDirectoryID": {
+    "DirectoryID": {
       "type": "string",
       "metadata": {
-        "description": "Azure Active Directory directory ID for the registered application. Required when HDInsight default storage is Data Lake Store."
+        "description": "Azure Active Directory directory ID for the registered application. Required."
       },
       "defaultValue": "<AAD_DIRECTORY_ID>"
     },
-    "DataLakeStoreApplicationID": {
+    "ApplicationID": {
       "type": "string",
       "metadata": {
-        "description": "Registered application's ID. Required when HDInsight default storage is Data Lake Store."
+        "description": "Registered application's ID. Required."
       },
       "defaultValue": "<APPLICATION_ID>"
     },
-    "DataLakeStoreSecret": {
+    "Secret": {
       "type": "secureString",
       "metadata": {
-        "description": "Registered application's key for access to Data Lake Store. Required when HDInsight default storage is Data Lake Store."
+        "description": "Registered application's key for access to Data Lake Store. Required."
       },
       "defaultValue": "<APPLICATION_SECRET>"
     },
-    "galleryPackageIdentity": {
+    "KeyVaultUrl": {
       "type": "string",
       "metadata": {
-          "description": "Identity of the gallery package for the application."
+        "description": "Key Vault URL. Required when either HDInsight default storage is Blob Storage, or when using Azure Active Directory authentication."
       },
-      "defaultValue": "wrangler-enterprise"
+      "defaultValue": "https://KEY_VAULT_NAME.vault.azure.net/"
+    },
+    "SasTokenId": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Azure Key Vault Secret containing Shared Access Signature. Required when HDInsight default storage is Blob Storage."
+      },
+      "defaultValue": "<SAS_TOKEN_ID>"
     }
   },
   "variables": {
     "trifactaVersionShort": "[replace(parameters('trifactaVersion'), '.', '')]",
-    "branch": "master",
-    "baseUri": "[concat('https://raw.githubusercontent.com/Trifacta/azure-deploy/', variables('branch'))]",
+    "branch": "release/5.0",
+    "baseUri": "[concat('https://raw.githubusercontent.com/trifacta/azure-deploy/', variables('branch'))]",
     "armTemplateVersion": "1",
     "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public-read&sig=ksMPhDkLpJYPEXnRNp4vAdo6QQ9ulpP%2BM4Gsi/nea%2Bg%3D&sv=2016-05-31"
   },
   "resources": [
+    {
+      "apiVersion": "2016-09-01",
+      "name": "pid-9ce61f92-f188-470c-b332-cc0804fd8996",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
     {
       "name": "[concat(parameters('clusterName'), '/', parameters('applicationName'))]",
       "type": "Microsoft.HDInsight/clusters/applications",
@@ -113,7 +138,7 @@
           {
             "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
             "uri": "[concat(variables('baseUri'), '/bin/deploy.sh')]",
-            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DataLakeStoreDirectoryID'), '\" -a \"', parameters('DataLakeStoreApplicationID'), '\" -S \"', parameters('DataLakeStoreSecret'), '\"')]",
+            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DirectoryID'), '\" -a \"', parameters('ApplicationID'), '\" -S \"', parameters('Secret'), '\" -K \"', parameters('KeyVaultUrl'), '\" -T \"', parameters('SasTokenId'), '\"')]",
             "roles": ["edgenode"]
           }
         ],
@@ -128,7 +153,8 @@
           {
             "subDomainSuffix": "[parameters('subdomainApplicationURISuffix')]",
             "destinationPort": 3005,
-            "accessModes": ["webpage"]
+            "accessModes": ["webpage"],
+            "disableGatewayAuth": true
           }
         ],
         "applicationType": "CustomApplication"

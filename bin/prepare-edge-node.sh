@@ -19,22 +19,12 @@ wget -q -O - "https://www.postgresql.org/media/keys/ACCC4CF8.asc" | apt-key add 
 LogInfo "Installing deployment dependencies"
 apt-get install -y bc libxml2-utils jq moreutils
 
-LogInfo "Fixing Python package permissions"
-python_dir="/usr/local/lib/python2.7"
-directories=$(find "$python_dir/dist-packages/" -maxdepth 2 -type d)
-for d in $directories; do
-  chmod 775 "${d}"
-  chmod ugo+r "${d}"/*
-done
-chmod -R 755 $python_dir/dist-packages/pkg_resources*
-chmod -R 755 $python_dir/dist-packages/watchdog*
-chmod -R 755 $python_dir/dist-packages/tzlocal*
-chmod -R 755 $python_dir/dist-packages/six*
-chmod -R 755 $python_dir/dist-packages/setuptools*
-chmod -R 755 $python_dir/dist-packages/retrying*
-chmod -R 755 $python_dir/dist-packages/requests*
-chmod -R 755 $python_dir/dist-packages/PyYAML*
+# Installs a world-readable pkg_resources to /usr/lib/python2.7/dist-packages/.
+# Something else, likely a manual pip install, installs a root:staff readable
+# pkg_resources to /usr/local/lib/python2.7/dist-packages/.
+LogInfo "Re-installing python-pkg-resources"
+apt-get install --reinstall python-pkg-resources
 
 set +e
 LogInfo "Removing conflicting nginx package"
-apt-get purge -y hdinsight-nginx nginx nginx-common nginx-core
+apt-get purge -y hdinsight-nginx nginx nginx-common nginx-core || true
