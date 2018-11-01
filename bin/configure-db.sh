@@ -4,7 +4,7 @@ set -exo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/util.sh"
 
-pg_hba="/etc/postgresql/9.3/main/pg_hba.conf"
+pg_hba="/etc/postgresql/9.6/main/pg_hba.conf"
 
 trifacta_basedir="/opt/trifacta"
 create_db_roles_script="$trifacta_basedir/bin/setup-utils/db/trifacta-create-postgres-roles-dbs.sh"

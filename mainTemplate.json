@@ -38,9 +38,9 @@
       "metadata": {
         "description": "Trifacta application version to deploy"
       },
-      "defaultValue": "5.0.0",
+      "defaultValue": "5.1.0m5",
       "allowedValues": [
-        "5.0.0"
+        "5.1.0m5"
       ]
     },
     "applicationName": {
@@ -76,28 +76,28 @@
     "Secret": {
       "type": "secureString",
       "metadata": {
-        "description": "Registered application's key for access to Data Lake Store. Required."
+        "description": "Registered application's key. Required."
       },
       "defaultValue": "<APPLICATION_SECRET>"
     },
     "KeyVaultUrl": {
       "type": "string",
       "metadata": {
-        "description": "Key Vault URL. Required when either HDInsight default storage is Blob Storage, or when using Azure Active Directory authentication."
+        "description": "Key Vault URL. Required for Azure Data Lake Store access."
       },
       "defaultValue": "https://KEY_VAULT_NAME.vault.azure.net/"
     },
-    "SasTokenId": {
+    "SasToken": {
       "type": "string",
       "metadata": {
-        "description": "Name of Azure Key Vault Secret containing Shared Access Signature. Required when HDInsight default storage is Blob Storage."
+        "description": "Shared Access Signature token. Required for Blob Storage access."
       },
-      "defaultValue": "<SAS_TOKEN_ID>"
+      "defaultValue": "<WASB_SAS_TOKEN>"
     }
   },
   "variables": {
     "trifactaVersionShort": "[replace(parameters('trifactaVersion'), '.', '')]",
-    "branch": "release/5.0",
+    "branch": "release/5.1m5",
     "baseUri": "[concat('https://raw.githubusercontent.com/trifacta/azure-deploy/', variables('branch'))]",
     "armTemplateVersion": "1",
     "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public-read&sig=ksMPhDkLpJYPEXnRNp4vAdo6QQ9ulpP%2BM4Gsi/nea%2Bg%3D&sv=2016-05-31"
@@ -138,7 +138,7 @@
           {
             "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
             "uri": "[concat(variables('baseUri'), '/bin/deploy.sh')]",
-            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DirectoryID'), '\" -a \"', parameters('ApplicationID'), '\" -S \"', parameters('Secret'), '\" -K \"', parameters('KeyVaultUrl'), '\" -T \"', parameters('SasTokenId'), '\"')]",
+            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DirectoryID'), '\" -a \"', parameters('ApplicationID'), '\" -S \"', parameters('Secret'), '\" -K \"', parameters('KeyVaultUrl'), '\" -t \"', parameters('SasToken'), '\"')]",
             "roles": ["edgenode"]
           }
         ],
