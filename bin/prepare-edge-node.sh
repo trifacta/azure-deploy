@@ -12,9 +12,12 @@ apt-get -y install curl wget
 LogInfo "Setting up Trifacta dependency repository"
 curl -s "https://packagecloud.io/install/repositories/trifacta/dependencies/script.deb.sh" | bash
 
-LogInfo "Setting up Postgres repository"
+LogInfo "Setting up PostgreSQL repository"
 echo "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 wget -q -O - "https://www.postgresql.org/media/keys/ACCC4CF8.asc" | apt-key add -
+
+LogInfo "Start PostgreSQL upon VM boot"
+systemctl enable postgresql
 
 LogInfo "Installing deployment dependencies"
 apt-get install -y bc libxml2-utils jq moreutils
