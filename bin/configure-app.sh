@@ -7,7 +7,7 @@ source "$script_dir/util.sh"
 directory_id=""
 application_id=""
 secret=""
-wasb_sas_token_id=""
+wasb_sas_token=""
 key_vault_url=""
 
 # TODO: Figure out what's going on with spark-job-service.classpath
@@ -17,21 +17,21 @@ function Usage() {
 Usage: "$0 [options]"
 
 Options:
-  -d <dir ID>    Azure Active Directory directory ID for the registered application. Required when HDI default storage is ADLS. [default: $directory_id]
-  -a <app ID>    Registered application\'s ID. Required when HDI default storage is ADLS. [default: $application_id]
-  -S <secret>    Registered application\'s key for access to ADLS. Required when HDI default storage is ADLS. [default: $secret]
-  -T <sas token ID> Shared Access Signature token identifier. Required when HDI storage is WASB.
-  -K <key vault URL> Azure Key Vault URL. Required when HDI storage is WASB.
+  -d <dir ID>    Azure Active Directory directory ID for the registered application. Required when storage is ADLS. [default: $directory_id]
+  -a <app ID>    Registered application\'s ID. Required when storage is ADLS. [default: $application_id]
+  -S <secret>    Registered application\'s key for access to ADLS. Required when storage is ADLS. [default: $secret]
+  -t <sas token> Shared Access Signature token. Required when storage is WASB.
+  -K <key vault URL> Azure Key Vault URL. Required when storage is ADLS.
   -h             This message.
 EOF
 }
 
-while getopts "u:d:a:S:T:K:h" opt; do
+while getopts "u:d:a:S:t:K:h" opt; do
   case $opt in
     d  ) directory_id=$OPTARG ;;
     a  ) application_id=$OPTARG ;;
     S  ) secret=$OPTARG ;;
-    T  ) wasb_sas_token_id=$OPTARG ;;
+    t  ) wasb_sas_token=$OPTARG ;;
     K  ) key_vault_url=$OPTARG ;;
     h  ) Usage && exit 0 ;;
     \? ) LogError "Invalid option: -$OPTARG" ;;
@@ -70,10 +70,6 @@ function CreateCustomerKey() {
   fi
 }
 
-# function CreateHadoopUser() {
-#   echo "Creating \"trifacta\" local user on the HDI cluster"
-# }
-
 function CreateHdfsDirectories() {
   # Note, these do not need to be prefixed by the ADLS mount point if ADLS is in use
   local directories="/trifacta /user/trifacta"
@@ -101,7 +97,7 @@ function CheckValueSetOrExit() {
 }
 
 function ConfigurePostgres() {
-  local pg_version="9.3"
+  local pg_version="9.6"
   local pg_dir="/etc/postgresql/$pg_version/main/"
   local pg_conf="$pg_dir/postgresql.conf"
 
@@ -214,15 +210,19 @@ function ConfigureWASB() {
   LogInfo "Configuring WASB"
   CheckValueSetOrExit "WASB service name" "$wasb_service_name"
   CheckValueSetOrExit "WASB Host" "$wasb_host"
-  CheckValueSetOrExit "WASB Shared Access Signature token ID" "$wasb_sas_token_id"
+  CheckValueSetOrExit "WASB Shared Access Signature token" "$wasb_sas_token"
 
   jq ".webapp.storageProtocol = \"wasbs\" |
     .hdfs.enabled = false |
     .azure.wasb.enabled = true |
+    .azure.wasb.fetchSasTokensFromKeyVault = false |
     .azure.wasb.defaultStore.blobHost = \"$wasb_host\" |
     .azure.wasb.defaultStore.container = \"$wasb_container\" |
-    .azure.wasb.defaultStore.sasTokenId = \"$wasb_sas_token_id\"" \
+    .azure.wasb.defaultStore.sasToken = \"$wasb_sas_token\"" \
     "$triconf" | sponge "$triconf"
+
+  # Not really sure this is required but it's probably safest to ensure wasbs
+  sed -i 's@wasb://@wasbs://@g' "/opt/trifacta/conf/hadoop-site/core-site.xml"
 }
 
 function ConfigureHDP() {
@@ -234,28 +234,26 @@ function ConfigureHDP() {
   CheckValueSetOrExit "HDP short version" "$hdp_short_version"
 
   jq ".hadoopBundleJar = \"hadoop-deps/hdp-${hdp_short_version}/build/libs/hdp-${hdp_short_version}-bundle.jar\" |
-    .[\"batch-job-runner\"].autoRestart = true |
-    .[\"batch-job-runner\"].classpath = \"%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/batch-job-runner.jar:%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/lib/*:/etc/hadoop/conf:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/%(hadoopBundleJar)s\" |
-    .[\"data-service\"].autoRestart = true |
-    .[\"data-service\"].hiveJdbcJar = \"/usr/hdp/current/hive-client/lib/hive-jdbc.jar\" |
-    .[\"data-service\"].classpath = \"%(topOfTree)s/services/data-service/build/libs/data-service.jar:%(topOfTree)s/services/data-service/build/conf:%(topOfTree)s/services/data-service/build/dependencies/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hive-client/lib/*:%(topOfTree)s/%(hadoopBundleJar)s:%(topOfTree)s/%(data-service.hiveJdbcJar)s\" |
-    .[\"ml-service\"].autoRestart = true |
-    .[\"scheduling-service\"].autoRestart = true |
-    .[\"spark-job-service\"].autoRestart = true |
-    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:/etc/hadoop/conf/:%(topOfTree)s/conf/hadoop-site/:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/%(sparkBundleJar)s:%(topOfTree)s/%(hadoopBundleJar)s\" |
+    .[\"batch-job-runner\"].classpath = \"%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/batch-job-runner.jar:%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/lib/*:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hadoop-client/lib/*:%(topOfTree)s/%(hadoopBundleJar)s\" |
+    .[\"batch-job-runner\"].env.LD_LIBRARY_PATH = \"%(topOfTree)s/libs/java/joblaunch/fileconverter/tableausdk-linux64/lib64/tableausdk/:/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
+    .[\"batch-job-runner\"].systemProperties[\"java.library.path\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .[\"spark-job-service\"].jvmOptions = [\"-Xmx128m\", \"-Dhdp.version=${hdp_full_version}\"] |
-    .[\"spark-job-service\"].env.SPARK_DIST_CLASSPATH = \"/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hive-client/lib/*\" |
-    .[\"spark-job-service\"].env.HADOOP_CONF_DIR = \"/etc/hadoop/conf\" |
-    .[\"spark-job-service\"].enableHiveSupport = true |
-    .[\"spark-job-service\"].hiveDependenciesLocation = \"%(topOfTree)s/hadoop-deps/hdp-${hdp_short_version}/build/libs\" |
-    .[\"time-based-trigger-service\"].autoRestart = true |
-    .[\"udf-service\"].autoRestart = true |
-    .[\"vfs-service\"].autoRestart = true |
-    .webapp.autoRestart = true |
     .spark.hadoopUser = \"$trifacta_user\" |
     .spark.props[\"spark.driver.extraJavaOptions\"] = \"-XX:MaxPermSize=1024m -XX:PermSize=256m -Dhdp.version=${hdp_full_version}\" |
+    .spark.props[\"spark.driver.extraLibraryPath\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
+    .spark.props[\"spark.executor.extraLibraryPath\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .spark.props[\"spark.yarn.am.extraJavaOptions\"] = \"-Dhdp.version=${hdp_full_version}\" |
-    .env.PATH = \"\${HOME}/bin:$PATH:/usr/local/bin\" |
+    .[\"batch-job-runner\"].autoRestart = true |
+    .[\"data-service\"].autoRestart = true |
+    .[\"ml-service\"].autoRestart = true |
+    .[\"proxy\"].autoRestart = true |
+    .[\"scheduling-service\"].autoRestart = true |
+    .[\"spark-job-service\"].autoRestart = true |
+    .[\"time-based-trigger-service\"].autoRestart = true |
+    .[\"udf-service\"].autoRestart = true |
+    .[\"vfs-service\"].autoRestart = true  |
+    .webapp.autoRestart = true |
+    .env.PATH = \"\${HOME}/bin:$PATH:/usr/local/bin:/usr/lib/zookeeper/bin\" |
     .env.TRIFACTA_CONF = \"/opt/trifacta/conf\" |
     .env.JAVA_HOME = \"/usr/lib/jvm/java-1.8.0-openjdk-amd64\"" \
     "$triconf" | sponge "$triconf"
@@ -383,7 +381,8 @@ function ConfigureHive() {
     LogInfo "Configuring Hive"
     CheckValueSetOrExit "HDP short version" "$hdp_short_version"
 
-    jq ".[\"spark-job-service\"].enableHiveSupport = true |
+    jq ".[\"data-service\"].hiveJdbcJar = \"hadoop-deps/hdp-${hdp_short_version}/build/libs/hdp-${hdp_short_version}-hive-jdbc.jar\" |
+      .[\"spark-job-service\"].enableHiveSupport = true |
       .[\"spark-job-service\"].hiveDependenciesLocation = \"%(topOfTree)s/hadoop-deps/hdp-${hdp_short_version}/build/libs\"" \
       "$triconf" | sponge "$triconf"
   fi
