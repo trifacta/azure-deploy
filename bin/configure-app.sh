@@ -243,7 +243,7 @@ function ConfigureHDP() {
     .[\"scheduling-service\"].autoRestart = true |
     .[\"spark-job-service\"].autoRestart = true |
     .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:/etc/hadoop/conf/:%(topOfTree)s/conf/hadoop-site/:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/%(sparkBundleJar)s:%(topOfTree)s/%(hadoopBundleJar)s\" |
-    .[\"spark-job-service\"].jvmOptions = [\"-Xmx128m\", \"-Dhdp.version=${hdp_full_version}\"] |
+    .[\"spark-job-service\"].jvmOptions = [\"-Xmx512m\", \"-Dhdp.version=${hdp_full_version}\"] |
     .[\"spark-job-service\"].env.SPARK_DIST_CLASSPATH = \"/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hive-client/lib/*\" |
     .[\"spark-job-service\"].env.HADOOP_CONF_DIR = \"/etc/hadoop/conf\" |
     .[\"spark-job-service\"].enableHiveSupport = true |
