@@ -10,8 +10,6 @@ secret=""
 wasb_sas_token=""
 key_vault_url=""
 
-# TODO: Figure out what's going on with spark-job-service.classpath
-
 function Usage() {
   cat << EOF
 Usage: "$0 [options]"
@@ -238,6 +236,7 @@ function ConfigureHDP() {
     .[\"batch-job-runner\"].env.LD_LIBRARY_PATH = \"%(topOfTree)s/libs/java/joblaunch/fileconverter/tableausdk-linux64/lib64/tableausdk/:/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .[\"batch-job-runner\"].systemProperties[\"java.library.path\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .[\"spark-job-service\"].jvmOptions = [\"-Xmx512m\", \"-Dhdp.version=${hdp_full_version}\"] |
+    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/%(sparkBundleJar)s:%(topOfTree)s/%(hadoopBundleJar)s\" |
     .spark.hadoopUser = \"$trifacta_user\" |
     .spark.props[\"spark.driver.extraJavaOptions\"] = \"-XX:MaxPermSize=1024m -XX:PermSize=256m -Dhdp.version=${hdp_full_version}\" |
     .spark.props[\"spark.driver.extraLibraryPath\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
