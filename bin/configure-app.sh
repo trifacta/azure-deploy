@@ -190,8 +190,8 @@ function ConfigureADLS() {
     .hdfs.webhdfs.port = 443 |
     .hdfs.pathsConfig.fileUpload = \"${adls_prefix}/trifacta/uploads\" |
     .hdfs.pathsConfig.dictionaries = \"${adls_prefix}/trifacta/dictionaries\" |
-    .hdfs.pathsConfig.libraries = \"/trifacta/libraries\" |
-    .hdfs.pathsConfig.tempFiles = \"/trifacta/tempfiles\" |
+    .hdfs.pathsConfig.libraries = \"${adls_prefix}/trifacta/libraries\" |
+    .hdfs.pathsConfig.tempFiles = \"${adls_prefix}/trifacta/tempfiles\" |
     .hdfs.pathsConfig.sparkEventLogs = \"${adls_prefix}/trifacta/sparkeventlogs\" |
     .hdfs.pathsConfig.batchResults = \"${adls_prefix}/trifacta/queryResults\" |
     .azure.adl.mode = \"system\" |
