@@ -70,10 +70,16 @@ function CreateCustomerKey() {
 
 function CreateHdfsDirectories() {
   # Note, these do not need to be prefixed by the ADLS mount point if ADLS is in use
-  local directories="/trifacta /user/trifacta"
+  local directories="
+    /user/trifacta
+    /trifacta
+    /trifacta/dictionaries
+    /trifacta/libraries
+    /trifacta/queryResults
+    /trifacta/tempfiles
+    /trifacta/uploads"
   for directory in $directories; do
     hdfs dfs -mkdir -p "$directory"
-    # hdfs dfs -chown "$trifacta_user" "$directory"
   done
 }
 
