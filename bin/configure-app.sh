@@ -79,7 +79,8 @@ function CreateHdfsDirectories() {
     /trifacta/libraries
     /trifacta/queryResults
     /trifacta/tempfiles
-    /trifacta/uploads"
+    /trifacta/uploads
+    /trifacta/.datasourceCache"
   for directory in $directories; do
     hdfs dfs -mkdir -p "$directory"
   done
@@ -202,6 +203,7 @@ function ConfigureADLS() {
     .hdfs.pathsConfig.tempFiles = \"${adls_prefix}/trifacta/tempfiles\" |
     .hdfs.pathsConfig.sparkEventLogs = \"${adls_prefix}/trifacta/sparkeventlogs\" |
     .hdfs.pathsConfig.batchResults = \"${adls_prefix}/trifacta/queryResults\" |
+    .hdfs.pathsConfig.globalDatasourceCache = \"${adls_prefix}/trifacta/.datasourceCache\" |
     .azure.adl.mode = \"system\" |
     .azure.adl.enabled = true |
     .azure.adl.store = \"$adls_uri\"" \
