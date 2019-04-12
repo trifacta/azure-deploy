@@ -3,7 +3,7 @@
 set -exo pipefail
 
 version="6.0.1"
-branch="master"
+branch="release/6.0"
 directory_id="DIRECTORY_ID"
 application_id="APPLICATION_ID"
 secret="APPLICATION_SECRET"
