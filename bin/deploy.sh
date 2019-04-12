@@ -2,7 +2,7 @@
 
 set -exo pipefail
 
-version="5.1.0m5"
+version="6.0.0"
 branch="master"
 directory_id="DIRECTORY_ID"
 application_id="APPLICATION_ID"
@@ -61,8 +61,8 @@ done
 
 # If not specified, pick default build number for corresponding versions
 if [[ -z ${build+x} ]]; then
-  if [[ "$version" == "5.1.0m5" ]]; then
-    build="120"
+  if [[ "$version" == "6.0.0" ]]; then
+    build="169"
   else
     LogError "Version \"$version\" not recognized and build number not specified (via -b option)"
   fi

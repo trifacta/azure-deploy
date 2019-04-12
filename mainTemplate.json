@@ -38,9 +38,9 @@
       "metadata": {
         "description": "Trifacta application version to deploy"
       },
-      "defaultValue": "5.1.0m5",
+      "defaultValue": "6.0.0",
       "allowedValues": [
-        "5.1.0m5"
+        "6.0.0"
       ]
     },
     "applicationName": {

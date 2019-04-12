@@ -98,21 +98,43 @@ cat > "$pg_hba" << EOF
 local   all             postgres                                peer
 
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+###### TRIFACTA ENTRIES - BEGIN######
+
 # Entries for trifacta user
+
 local trifacta trifacta md5
 host trifacta trifacta 127.0.0.1/32 md5
 host trifacta trifacta ::1/128 md5
+
 # Entries for trifactaactiviti user
+
 local trifacta-activiti trifactaactiviti md5
 host trifacta-activiti trifactaactiviti 127.0.0.1/32 md5
 host trifacta-activiti trifactaactiviti ::1/128 md5
+
 # Entries for scheduling-service & time-based-trigger-service user
+
 local trifactatimebasedtriggerservice trifactatimebasedtriggerservice md5
 host trifactatimebasedtriggerservice trifactatimebasedtriggerservice 127.0.0.1/32 md5
 host trifactatimebasedtriggerservice trifactatimebasedtriggerservice ::1/128 md5
 local trifactaschedulingservice trifactaschedulingservice md5
 host trifactaschedulingservice trifactaschedulingservice 127.0.0.1/32 md5
 host trifactaschedulingservice trifactaschedulingservice ::1/128 md5
+
+# Entries for trifactaconfigurationservice user
+
+local trifactaconfigurationservice trifactaconfigurationservice md5
+host trifactaconfigurationservice trifactaconfigurationservice 127.0.0.1/32 md5
+host trifactaconfigurationservice trifactaconfigurationservice ::1/128 md5
+
+# Entries for trifactaartifactstorageservice user
+
+local trifactaartifactstorageservice trifactaartifactstorageservice md5
+host trifactaartifactstorageservice trifactaartifactstorageservice 127.0.0.1/32 md5
+host trifactaartifactstorageservice trifactaartifactstorageservice ::1/128 md5
+
+###### TRIFACTA ENTRIES - END ######
 
 # "local" is for Unix domain socket connections only
 local   all             all                                     peer

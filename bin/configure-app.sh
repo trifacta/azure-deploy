@@ -202,6 +202,7 @@ function ConfigureADLS() {
     .hdfs.pathsConfig.sparkEventLogs = \"${adls_prefix}/trifacta/sparkeventlogs\" |
     .hdfs.pathsConfig.batchResults = \"${adls_prefix}/trifacta/queryResults\" |
     .hdfs.pathsConfig.globalDatasourceCache = \"${adls_prefix}/trifacta/.datasourceCache\" |
+    .azure.resourceURL = \"https://datalake.azure.net/\" |
     .azure.adl.mode = \"system\" |
     .azure.adl.enabled = true |
     .azure.adl.store = \"$adls_uri\"" \
