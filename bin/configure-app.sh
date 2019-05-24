@@ -346,7 +346,7 @@ function ConfigureHANameNode() {
   local service_name=""
   if [[ "$fs_type" == "adl" ]]; then
     service_name=$(GetHadoopProperty "dfs.adls.home.hostname" "$core_site")
-  elif [[ "$fs_type" == "wasb" ]]; then
+  elif [[ "$fs_type" == "wasb" || "$fs_type" == "wasbs" ]]; then
     service_name=$(GetDefaultFS)
     service_name=$(echo "$service_name" | grep -Po "[a-z]*://\K.*")
   fi
@@ -407,7 +407,7 @@ function ConfigureHDI() {
   ConfigureHDP
   if [[ "$fs_type" == "adl" ]]; then
     ConfigureADLS
-  elif [[ "$fs_type" == "wasb" ]]; then
+  elif [[ "$fs_type" == "wasb" || "$fs_type" == "wasbs" ]]; then
     ConfigureWASB
   else
     LogError "Unsupported filesystem (\"$fs_type\"). Exiting."
