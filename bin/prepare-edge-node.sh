@@ -28,6 +28,9 @@ apt-get install -y bc libxml2-utils jq moreutils
 LogInfo "Re-installing python-pkg-resources"
 apt-get install --reinstall python-pkg-resources
 
+LogInfo "Installing Python dependencies"
+apt-get install -y python-kerberos python-requests
+
 set +e
 LogInfo "Removing conflicting nginx package"
 apt-get purge -y hdinsight-nginx nginx nginx-common nginx-core || true
