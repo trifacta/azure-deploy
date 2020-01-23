@@ -134,6 +134,12 @@ local trifactaartifactstorageservice trifactaartifactstorageservice md5
 host trifactaartifactstorageservice trifactaartifactstorageservice 127.0.0.1/32 md5
 host trifactaartifactstorageservice trifactaartifactstorageservice ::1/128 md5
 
+# Entries for trifactajobmetadataservice user
+
+local   trifactajobmetadataservice     trifactajobmetadataservice                     md5
+host    trifactajobmetadataservice     trifactajobmetadataservice     127.0.0.1/32    md5
+host    trifactajobmetadataservice     trifactajobmetadataservice     ::1/128         md5
+
 ###### TRIFACTA ENTRIES - END ######
 
 # "local" is for Unix domain socket connections only
