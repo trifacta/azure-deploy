@@ -246,7 +246,8 @@ function ConfigureHDP() {
     .[\"batch-job-runner\"].systemProperties[\"java.library.path\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .[\"batchserver\"].spark.requestTimeoutMillis = 120000 |
     .[\"spark-job-service\"].jvmOptions = [\"-Xmx512m\", \"-Dhdp.version=${hdp_full_version}\"] |
-    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:%(topOfTree)s/%(sparkBundleJar)s:/etc/hadoop/conf:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/services/spark-job-server/build/bundle/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/%(hadoopBundleJar)s\" |
+    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:%(topOfTree)s/conf/hadoop-site/:%(topOfTree)s/services/spark-job-server/build/bundle/*:/usr/hdp/current/hadoop-client/hadoop-azure.jar:/usr/hdp/current/hadoop-client/lib/azure-storage-2.2.0.jar\" |
+    .[\"spark-job-service\"].env.SPARK_DIST_CLASSPATH": "/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hadoop-mapreduce-client/*\" |
     .spark.hadoopUser = \"$trifacta_user\" |
     .spark.props[\"spark.driver.extraJavaOptions\"] = \"-XX:MaxPermSize=1024m -XX:PermSize=256m -Dhdp.version=${hdp_full_version}\" |
     .spark.props[\"spark.driver.extraLibraryPath\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
