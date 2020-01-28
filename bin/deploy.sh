@@ -2,8 +2,8 @@
 
 set -exo pipefail
 
-version="6.4.2"
-branch="master"
+version="6.8.0"
+branch="dev/6.8"
 directory_id="DIRECTORY_ID"
 application_id="APPLICATION_ID"
 secret="APPLICATION_SECRET"
@@ -61,8 +61,8 @@ done
 
 # If not specified, pick default build number for corresponding versions
 if [[ -z ${build+x} ]]; then
-  if [[ "$version" == "6.4.2" ]]; then
-    build="387"
+  if [[ "$version" == "6.8.0" ]]; then
+    build="186"
   else
     LogError "Version \"$version\" not recognized and build number not specified (via -b option)"
   fi
@@ -130,7 +130,7 @@ done
 
 RunScript prepare-edge-node.sh
 RunScript install-app.sh -v "$version" -b "$build" -s "$shared_access_signature"
-RunScript configure-db.sh
-RunScript configure-app.sh -d "$directory_id" -a "$application_id" -S "$secret" -t "$wasb_sas_token" -K "$key_vault_url"
+# RunScript configure-db.sh
+# RunScript configure-app.sh -d "$directory_id" -a "$application_id" -S "$secret" -t "$wasb_sas_token" -K "$key_vault_url"
 
 popd 2>&1 > /dev/null

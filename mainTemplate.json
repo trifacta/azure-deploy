@@ -38,9 +38,9 @@
       "metadata": {
         "description": "Trifacta application version to deploy"
       },
-      "defaultValue": "6.4.2",
+      "defaultValue": "6.8.0",
       "allowedValues": [
-        "6.4.2"
+        "6.8.0"
       ]
     },
     "applicationName": {
@@ -97,7 +97,7 @@
   },
   "variables": {
     "trifactaVersionShort": "[replace(parameters('trifactaVersion'), '.', '')]",
-    "branch": "master",
+    "branch": "dev/6.8",
     "baseUri": "[concat('https://raw.githubusercontent.com/trifacta/azure-deploy/', variables('branch'))]",
     "armTemplateVersion": "1",
     "trifactaDownloadAccessSignature": "sr=c&si=trifacta-deploy-public-read&sig=ksMPhDkLpJYPEXnRNp4vAdo6QQ9ulpP%2BM4Gsi/nea%2Bg%3D&sv=2016-05-31"
