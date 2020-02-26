@@ -241,12 +241,13 @@ function ConfigureHDP() {
   CheckValueSetOrExit "HDP short version" "$hdp_short_version"
 
   jq ".hadoopBundleJar = \"hadoop-deps/hdp-${hdp_short_version}/build/libs/hdp-${hdp_short_version}-bundle.jar\" |
-    .[\"batch-job-runner\"].classpath = \"%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/batch-job-runner.jar:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/lib/*:/etc/hadoop/conf:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/lib/*:%(topOfTree)s/%(hadoopBundleJar)s\" |
+    .[\"batch-job-runner\"].classpath = \"%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/batch-job-runner.jar:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/services/batch-job-runner/build/install/batch-job-runner/lib/*:/etc/hadoop/conf:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/lib/*:%(topOfTree)s/%(hadoopBundleJar)s:/usr/hdp/current/hadoop-mapreduce-client/*\" |
     .[\"batch-job-runner\"].env.LD_LIBRARY_PATH = \"%(topOfTree)s/libs/java/joblaunch/fileconverter/tableausdk-linux64/lib64/tableausdk/:/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .[\"batch-job-runner\"].systemProperties[\"java.library.path\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
     .[\"batchserver\"].spark.requestTimeoutMillis = 120000 |
     .[\"spark-job-service\"].jvmOptions = [\"-Xmx512m\", \"-Dhdp.version=${hdp_full_version}\"] |
-    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:%(topOfTree)s/%(sparkBundleJar)s:/etc/hadoop/conf:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/services/spark-job-server/build/bundle/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/%(hadoopBundleJar)s\" |
+    .[\"spark-job-service\"].classpath = \"%(topOfTree)s/services/spark-job-server/server/build/libs/spark-job-server-bundle.jar:%(topOfTree)s/%(sparkBundleJar)s:/etc/hadoop/conf:%(topOfTree)s/conf/hadoop-site:/usr/lib/hdinsight-datalake/*:%(topOfTree)s/services/spark-job-server/build/bundle/*:/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:%(topOfTree)s/%(hadoopBundleJar)s:/usr/hdp/current/spark2-client/jars/*\" |
+    .[\"spark-job-service\"].env.SPARK_DIST_CLASSPATH = \"/usr/hdp/current/hadoop-client/client/*:/usr/hdp/current/hadoop-client/*:/usr/hdp/current/hive-client/lib/*:/usr/hdp/current/spark2-client/jars/*\" |
     .spark.hadoopUser = \"$trifacta_user\" |
     .spark.props[\"spark.driver.extraJavaOptions\"] = \"-XX:MaxPermSize=1024m -XX:PermSize=256m -Dhdp.version=${hdp_full_version}\" |
     .spark.props[\"spark.driver.extraLibraryPath\"] = \"/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-amd64-64\" |
