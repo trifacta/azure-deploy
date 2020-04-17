@@ -4,6 +4,7 @@ set -exo pipefail
 
 version="6.4.2"
 branch="dev/6.4"
+build="407"
 directory_id="DIRECTORY_ID"
 application_id="APPLICATION_ID"
 secret="APPLICATION_SECRET"
@@ -58,15 +59,6 @@ while getopts "v:b:B:s:d:a:S:t:K:h" opt; do
     :  ) LogError "Option -$OPTARG requires an argument." ;;
   esac
 done
-
-# If not specified, pick default build number for corresponding versions
-if [[ -z ${build+x} ]]; then
-  if [[ "$version" == "6.4.2" ]]; then
-    build="407"
-  else
-    LogError "Version \"$version\" not recognized and build number not specified (via -b option)"
-  fi
-fi
 
 if [[ -z ${shared_access_signature+x} ]]; then
   LogError "Shared access signature must be specified (via -s option)"

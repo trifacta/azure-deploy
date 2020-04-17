@@ -43,6 +43,17 @@
         "6.4.2"
       ]
     },
+    "trifactaBuild": {
+      "type": "string",
+      "metadata": {
+        "description": "Trifacta application build to deploy"
+      },
+      "defaultValue": "407",
+      "allowedValues": [
+        "387",
+        "407"
+      ]
+    },
     "applicationName": {
       "type": "string",
       "metadata": {
@@ -138,7 +149,7 @@
           {
             "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
             "uri": "[concat(variables('baseUri'), '/bin/deploy.sh')]",
-            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DirectoryID'), '\" -a \"', parameters('ApplicationID'), '\" -S \"', parameters('Secret'), '\" -K \"', parameters('KeyVaultUrl'), '\" -t \"', parameters('SasToken'), '\"')]",
+            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -b \"', parameters('trifactaBuild'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DirectoryID'), '\" -a \"', parameters('ApplicationID'), '\" -S \"', parameters('Secret'), '\" -K \"', parameters('KeyVaultUrl'), '\" -t \"', parameters('SasToken'), '\"')]",
             "roles": ["edgenode"]
           }
         ],
