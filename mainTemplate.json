@@ -12,22 +12,10 @@
                 "description": "This is the object ID for the service princpal."
             }
         },
-        "location": {
-            "defaultValue": "[resourceGroup().location]",
-            "type": "string"
-        },
-        "networkSecurityGroupName": {
-            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-nsg')]",
-            "type": "string"
-        },
         "sshAccessSourceRange": {
             "type": "string"
         },
         "trifactaAccessSourceRange": {
-            "type": "string"
-        },
-        "publicIpAddressName": {
-            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-pip')]",
             "type": "string"
         },
         "publicIpAddressType": {
@@ -38,13 +26,15 @@
             "defaultValue": "Basic",
             "type": "string"
         },
-        "virtualMachineName": {
-            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-vm')]",
-            "type": "string"
-        },
         "virtualMachineSize": {
             "type": "string",
-            "defaultValue": "Standard_E8s_v3"
+            "defaultValue": "Standard_E8s_v3",
+            "allowedValues": [
+                "Standard_E8s_v3",
+                "Standard_E16s_v3",
+                "Standard_D16_v3",
+                "Standard_D32_v3"
+            ]            
         },
         "adminUsername": {
             "type": "string"
@@ -53,17 +43,8 @@
             "type": "secureString"
         },
         "databricksMRGID": {
-            "type": "string",
-            "defaultValue": "[concat(subscription().id, '/resourceGroups/', concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2)))]"
-        },
-        "containerName": {
-            "type": "string",
-            "defaultValue": ""
-        },
-        "keyVaultName": {
-            "type": "string",
-            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-kv')]"
-        },
+            "type": "string"
+        },    
         "trifactaVersion": {
             "type": "string",
             "allowedValues": [
@@ -75,11 +56,18 @@
                 "description": "The Linux OS Version for the VM Offer. This will trifacta-marketplace image of this given Linux version."
             }
         },
+        "storageAccountName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+
+        "location": "[resourceGroup().location]",
+        "networkSecurityGroupName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-nsg')]",
+        "publicIpAddressName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-pip')]",        
+        "virtualMachineName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-vm')]",
         "virtualNetwork": {
-            "type": "object",
-            "defaultValue": {
                 "name": "trifacta-wrangler-vnet01",
-                "resourceGroup": "trifacta-rg",
                 "addressPrefixes": [
                     "10.0.1.0/24"
                 ],
@@ -92,35 +80,27 @@
                         "startAddress": "10.0.1.4"
                     }
                 }
-            }
-        },
-        "storageAccount": {
-            "type": "object",
-            "defaultValue": {
-                "name": "trifactastorageaccount01",
-                "type": "Standard_LRS",
-                "newOrExisting": "new"
-            }
-        },
+            },
+        "keyVaultName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-kv')]",
         "imageReferenceTrifactaEnterprise": {
-            "type": "object",
-            "defaultValue": {
                 "publisher": "trifacta",
                 "sku": "wrangler-enterprise",
                 "offer": "wrangler-enterprise-vm"
-            }
-        }
+        },
 
+        "storageAccount": {
+                "name": "[parameters('storageAccountName')]",
+                "type": "Standard_LRS",
+                "newOrExisting": "new"
+        },
 
-    },
-    "variables": {
-        "publicIpAddressId": "[resourceId('Microsoft.Network/publicIpAddresses', parameters('publicIpAddressName'))]",
-        "VNetName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-', parameters('virtualNetwork').name)]",
-        "NICName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-', parameters('virtualNetwork').name, '-nic')]",
-        "nsgId": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+        "publicIpAddressId": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]",
+        "VNetName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-', variables('virtualNetwork').name)]",
+        "NICName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-', variables('virtualNetwork').name, '-nic')]",
+        "nsgId": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
         "storageBlobContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
-        "storageAccountRoleAssignmentName": "[concat(parameters('storageAccount').name, '/Microsoft.Authorization/', guid(uniqueString(parameters('storageAccount').name)))]",
-        "blobServiceContainerName": "[concat(parameters('storageAccount').name, '/default/', if(empty(parameters('containerName')), concat('trifacta-wrangler', substring(uniqueString(resourceGroup().id),0,2)), parameters('containerName')))]",
+        "storageAccountRoleAssignmentName": "[concat(variables('storageAccount').name, '/Microsoft.Authorization/', guid(uniqueString(variables('storageAccount').name)))]",
+        "blobServiceContainerName": "[concat(variables('storageAccount').name, '/default/', concat('trifacta-wrangler', substring(uniqueString(resourceGroup().id),0,2)) )]",
         "databricksMRGIDName": "[if(empty(parameters('databricksMRGID')), concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-db'), parameters('databricksMRGID'))]"
 
     },
@@ -128,18 +108,18 @@
             "name": "[variables('NICName')]",
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2020-06-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]",
                 "[resourceId('Microsoft.Network/virtualNetworks/', variables('VNetName'))]",
-                "[resourceId('Microsoft.Network/publicIpAddresses/', parameters('publicIpAddressName'))]"
+                "[resourceId('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
             ],
             "properties": {
                 "ipConfigurations": [{
                     "name": "ipconfig1",
                     "properties": {
                         "subnet": {
-                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetName'), parameters('virtualNetwork').subnets.subnet1.name)]"
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetName'), variables('virtualNetwork').subnets.subnet1.name)]"
                         },
                         "privateIPAllocationMethod": "Dynamic",
                         "publicIpAddress": {
@@ -153,10 +133,10 @@
             }
         },
         {
-            "name": "[parameters('networkSecurityGroupName')]",
+            "name": "[variables('networkSecurityGroupName')]",
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-06-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "properties": {
                 "securityRules": [{
                         "name": "SSH",
@@ -188,20 +168,20 @@
             }
         },
         {
-            "condition": "[equals(parameters('virtualNetwork').newOrExisting, 'new')]",
+            "condition": "[equals(variables('virtualNetwork').newOrExisting, 'new')]",
             "name": "[variables('VNetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2020-06-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "properties": {
                 "addressSpace": {
-                    "addressPrefixes": "[array(parameters('virtualNetwork').addressPrefixes)]"
+                    "addressPrefixes": "[array(variables('virtualNetwork').addressPrefixes)]"
                     
                 },
                 "subnets": [{
-                    "name": "[parameters('virtualNetwork').subnets.subnet1.name]",
+                    "name": "[variables('virtualNetwork').subnets.subnet1.name]",
                     "properties": {
-                        "addressPrefix": "[first(parameters('virtualNetwork').addressPrefixes)]",
+                        "addressPrefix": "[first(variables('virtualNetwork').addressPrefixes)]",
                         "serviceEndpoints": [{
                             "service": "Microsoft.KeyVault"
                         }]
@@ -210,10 +190,10 @@
             }
         },
         {
-            "name": "[parameters('publicIpAddressName')]",
+            "name": "[variables('publicIpAddressName')]",
             "type": "Microsoft.Network/publicIpAddresses",
             "apiVersion": "2020-06-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "properties": {
                 "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
             },
@@ -222,10 +202,10 @@
             }
         },
         {
-            "name": "[parameters('virtualMachineName')]",
+            "name": "[variables('virtualMachineName')]",
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2020-06-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces/', variables('NICName'))]"
             ],
@@ -241,9 +221,9 @@
                         }
                     },
                     "imageReference": {
-                        "publisher": "[parameters('imageReferenceTrifactaEnterprise').publisher]",
-                        "offer": "[parameters('imageReferenceTrifactaEnterprise').offer]",
-                        "sku": "[parameters('imageReferenceTrifactaEnterprise').sku]",
+                        "publisher": "[variables('imageReferenceTrifactaEnterprise').publisher]",
+                        "offer": "[variables('imageReferenceTrifactaEnterprise').offer]",
+                        "sku": "[variables('imageReferenceTrifactaEnterprise').sku]",
                         "version": "[parameters('trifactaVersion')]"
                     }
                 },
@@ -253,7 +233,7 @@
                     }]
                 },
                 "osProfile": {
-                    "computerName": "[parameters('virtualMachineName')]",
+                    "computerName": "[variables('virtualMachineName')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": true,
@@ -267,20 +247,20 @@
                 }
             },
             "plan": {
-                "name": "[parameters('imageReferenceTrifactaEnterprise').sku]",
-                "product": "[parameters('imageReferenceTrifactaEnterprise').offer]",
-                "publisher": "[parameters('imageReferenceTrifactaEnterprise').publisher]"
+                "name": "[variables('imageReferenceTrifactaEnterprise').sku]",
+                "product": "[variables('imageReferenceTrifactaEnterprise').offer]",
+                "publisher": "[variables('imageReferenceTrifactaEnterprise').publisher]"
             }
         },
         {
-            "condition": "[equals(parameters('storageAccount').newOrExisting, 'new')]",
-            "name": "[parameters('storageAccount').name]",
+            "condition": "[equals(variables('storageAccount').newOrExisting, 'new')]",
+            "name": "[variables('storageAccount').name]",
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2019-06-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "kind": "StorageV2",
             "sku": {
-                "name": "[parameters('storageAccount').type]"
+                "name": "[variables('storageAccount').type]"
             },
             "properties": {
                 "encryption": {
@@ -299,12 +279,12 @@
             }
         },
         {
-            "condition": "[equals(parameters('storageAccount').newOrExisting, 'new')]",
+            "condition": "[equals(variables('storageAccount').newOrExisting, 'new')]",
             "name": "[variables('blobServiceContainerName')]",
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
             "apiVersion": "2019-06-01",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccount').name)]"
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccount').name)]"
             ]
         },
         {
@@ -312,7 +292,7 @@
             "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
             "apiVersion": "2019-04-01-preview",
             "dependsOn": [
-                "[parameters('storageAccount').name]"
+                "[variables('storageAccount').name]"
             ],
             "properties": {
                 "roleDefinitionId": "[variables('storageBlobContributor')]",
@@ -321,10 +301,10 @@
             }
         },
         {
-            "name": "[parameters('keyVaultName')]",
+            "name": "[variables('keyVaultName')]",
             "type": "Microsoft.KeyVault/vaults",
             "apiVersion": "2019-09-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetName'))]"
             ],
@@ -384,7 +364,7 @@
                     "defaultAction": "Deny",
                     "bypass": "AzureServices",
                     "virtualNetworkRules": [{
-                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetName'), parameters('virtualNetwork').subnets.subnet1.name)]",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetName'), variables('virtualNetwork').subnets.subnet1.name)]",
                         "ignoreMissingVnetServiceEndpoint": false
                     }]
                 }
@@ -394,15 +374,15 @@
             "name": "[variables('databricksMRGIDName')]",
             "type": "Microsoft.Databricks/workspaces",
             "apiVersion": "2018-04-01",
-            "location": "[parameters('location')]",
+            "location": "[variables('location')]",
             "properties": {
                 "managedResourceGroupId": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('databricksMRGIDName'))]"
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
                 "[resourceId('Microsoft.Network/virtualNetworks/', variables('VNetName'))]"
               ]
-            }
+        }
     ],
     "outputs": {
         "adminUsername": {
@@ -411,7 +391,7 @@
         },
         "trifactaInstanceName": {
             "type": "string",
-            "value": "[parameters('virtualMachineName')]"
+            "value": "[variables('virtualMachineName')]"
         }
     }
 }
