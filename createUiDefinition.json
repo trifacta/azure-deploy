@@ -1,9 +1,254 @@
 {
-  "handler": "Microsoft.HDInsight",
-  "version": "0.0.1-preview",
-  "clusterFilters": {
-      "types": ["Hadoop", "Spark", "HBase"],
-      "tiers": ["Standard", "Premium"],
-      "versions": ["3.5", "3.6"]
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "basics": [{
+        "name": "deploymentName",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Deployment Name",
+        "toolTip": "The name given to resources created by this deployment.",
+        "defaultValue": "trifacta-wrangler",
+        "constraints": {
+          "required": true,
+          "regex": "^[a-zA-Z]([a-z0-9A-Z-]{2,17})$",
+          "validationMessage": "The Deployment Name must be between 3 and 18 characters long, start with a letter, and contain only: letters, numbers, and hyphens."
+        }
+      },
+      {
+        "name": "adminUserName",
+        "type": "Microsoft.Compute.UserNameTextBox",
+        "label": "Admin Username",
+        "osPlatform": "Linux",
+        "constraints": {
+          "required": true,
+          "regex": "^((?!trifacta$))",
+          "validationMessage": "The username must not be trifacta"
+        },
+        "toolTip": "Provide admin username for the virtual machine"
+      },
+      {
+        "name": "SSHCredentials",
+        "type": "Microsoft.Compute.CredentialsCombo",
+        "label": {
+          "authenticationType": "Authentication type",
+          "password": "Password",
+          "confirmPassword": "Confirm password",
+          "sshPublicKey": "SSH public key"
+        },
+        "toolTip": {
+          "authenticationType": "Authentication Type for the Virtual Machine",
+          "password": "Password for the Virtual Machine",
+          "sshPublicKey": "SSH Public Key for the Virtual Machine"
+        },
+        "constraints": {
+          "required": true
+        },
+        "options": {
+          "hideConfirmation": false,
+          "hidePassword": true
+        },
+        "osPlatform": "Linux"
+      },
+      {
+        "name": "vmSize",
+        "type": "Microsoft.Compute.SizeSelector",
+        "label": "Virtual machine size",
+        "toolTip": "The size of virtual machine to provision.",
+        "recommendedSizes": [
+          "Standard_E8s_v3",
+          "Standard_E16s_v3",
+          "Standard_D16_v3",
+          "Standard_D32_v3"
+        ],
+        "osPlatform": "Linux"
+      },
+      {
+        "name": "sshAccessSourceRange",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Permitted SSH source range",
+        "toolTip": "Must be a valid CIDR IP range. E.g. 10.0.0.0/24 will allow access from 10.0.0.0 through 10.0.0.255.",
+        "defaultValue": "",
+        "constraints": {
+          "required": true,
+          "regex": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$|^Internet$|^AzureLoadBalancer$|^VirtualNetwork$",
+          "validationMessage": "Must be a single IP address or an IP address range in CIDR notation."
+        }
+      },
+      {
+        "name": "trifactaAccessSourceRange",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Permitted Web access range",
+        "toolTip": "Must be a valid CIDR IP range. E.g. 10.0.0.0/24 will allow access from 10.0.0.0 through 10.0.0.255.",
+        "defaultValue": "",
+        "constraints": {
+          "required": true,
+          "regex": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$|^Internet$|^AzureLoadBalancer$|^VirtualNetwork$",
+          "validationMessage": "Must be a single IP address or an IP address range in CIDR notation."
+        }
+      }
+    ],
+
+    "steps": [
+
+      {
+        "name": "storageAccountDetails",
+        "label": "Storage Account",
+        "subLabel": {
+          "preValidation": "Required",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Storage Account",
+        "elements": [
+
+          {
+            "name": "servicePrincipalObjectId",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Service Principal Object ID",
+            "toolTip": "The Service Princpal Object ID, we will use this to assign permissions to the storage account.",
+            "defaultValue": "",
+            "constraints": {
+              "required": true,
+              "regex": "^[a-z0-9A-Z-]{30,40}$",
+              "validationMessage": "The Service Principal Object ID must be between 30 and 40 characters"
+            }
+          },
+
+          {
+            "name": "storageAccount",
+            "type": "Microsoft.Storage.StorageAccountSelector",
+            "label": "Storage account",
+            "toolTip": "The storage accout which created/used for trifacta",
+            "defaultValue": {
+              "name": "trifactastorageaccount01",
+              "type": "Standard_LRS"
+            },
+            "options": {
+              "hideExisting": false
+            },
+            "visible": true
+          }
+        ]
+      },
+      {
+        "name": "networkingDetails",
+        "label": "Networking",
+        "subLabel": {
+          "preValidation": "Required",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Networking",
+        "elements": [{
+          "name": "virtualNetwork",
+          "type": "Microsoft.Network.VirtualNetworkCombo",
+          "toolTip": "Virtual network for trifacta",
+          "label": {
+            "virtualNetwork": "Virtual network",
+            "subnets": "Subnets"
+          },
+          "defaultValue": {
+            "name": "trifacta-vnet1",
+            "addressPrefixSize": "/24"
+          },
+          "constraints": {
+            "minAddressPrefixSize": "/16"
+          },
+          "options": {
+            "hideExisting": false
+          },
+          "subnets": {
+            "subnet1": {
+              "label": "subnet",
+              "defaultValue": {
+                "name": "subnet-1",
+                "addressPrefixSize": "/24"
+              },
+              "constraints": {
+                "minAddressPrefixSize": "/24",
+                "minAddressCount": 12,
+                "requireContiguousAddresses": true
+              }
+            }
+          },
+          "visible": true
+        }]
+      },
+
+      {
+        "name": "trifactaDetails",
+        "type": "Microsoft.Common.Section",
+        "label": "Trifacta Release",
+        "elements": [{
+            "name": "version",
+            "type": "Microsoft.Common.DropDown",
+            "label": "Version",
+            "defaultValue": "",
+            "toolTip": "The trifacta-wrangler marketplace version to use",
+            "constraints": {
+              "allowedValues": [{
+                  "label": "trifacta 8.2.100",
+                  "value": "8.2.100"
+                },
+                {
+                  "label": "trifacta 7.6.100",
+                  "value": "7.6.100"
+                },
+                {
+                  "label": "trifacta 7.1.001",
+                  "value": "7.1.001"
+                }
+              ],
+              "required": true
+            },
+            "visible": true
+          }
+        ],
+        "visible": true
+      },
+      {
+        "name": "databricksWorkspaceDetails",
+        "label": "Databricks Workspace",
+        "subLabel": {
+          "preValidation": "Required",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Databricks MRGID",
+        "elements": [{
+            "name": "Please provide a Databricks workspace or leave empty to be automatic provisioned.",
+            "type": "Microsoft.Common.InfoBox",
+            "visible": true,
+            "options": {
+              "icon": "Info",
+              "text": "Please provide a valid Databricks Cluster workspace to use or Leave empty for automatic provisioning"
+            }
+          },
+          {
+            "name": "databricksMRGID",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Databricks Workspace Name",
+            "toolTip": "The databricks Cluster workspace to use. leave empty for automatic provisioning",
+            "defaultValue": "",
+            "constraints": {             
+              "required": false,
+              "regex": "^[a-z0-9A-Z-]{1,10}$",
+              "validationMessage": "The databricks Cluster workspace must be between 1 and 10 characters"}
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "location": "[location()]",
+      "deploymentName": "[basics('deploymentName')]",
+      "virtualMachineSize": "[basics('vmSize')]",
+      "adminUserName": "[basics('adminUserName')]",
+      "sshPublicKey": "[basics('SSHCredentials').sshPublicKey]",
+      "sshAccessSourceRange": "[basics('sshAccessSourceRange')]",
+      "trifactaAccessSourceRange": "[basics('trifactaAccessSourceRange')]",
+      "servicePrincipalObjectId": "[steps('storageAccountDetails').servicePrincipalObjectId]",
+      "storageAccount": "[steps('storageAccountDetails').storageAccount]",
+      "virtualNetwork": "[steps('networkingDetails').virtualNetwork]",
+      "databricksMRGID": "[steps('databricksWorkspaceDetails').databricksMRGID]",
+      "trifactaVersion": "[steps('trifactaDetails').version]"
+    }
   }
 }

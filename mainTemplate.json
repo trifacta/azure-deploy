@@ -1,170 +1,417 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "clusterName": {
-      "type": "string",
-      "metadata": {
-        "description": "Name of the existing HDInsight cluster to be used"
-      }
-    },
-    "galleryPackageIdentity": {
-      "type": "string",
-      "metadata": {
-        "description": "Identity of the gallery package for the application.",
-        "trifactaComment": "Do not change this key."
-      },
-      "defaultValue": "wrangler-enterprise"
-    },
-    "edgeNodeSize": {
-      "type": "string",
-      "metadata": {
-        "description": "Virtual machine type for the Trifacta edge node",
-        "trifactaComment": "Do not change this key."
-      },
-      "defaultValue": "Standard_D13_V2",
-      "allowedValues": [
-        "Standard_A4",
-        "Standard_D4_V2",
-        "Standard_D5_V2",
-        "Standard_D12_V2",
-        "Standard_D13_V2",
-        "Standard_D14_V2",
-        "Standard_D15_V2"
-      ]
-    },
-    "trifactaVersion": {
-      "type": "string",
-      "metadata": {
-        "description": "Trifacta application version to deploy"
-      },
-      "defaultValue": "6.4.2",
-      "allowedValues": [
-        "6.4.2"
-      ]
-    },
-    "applicationName": {
-      "type": "string",
-      "metadata": {
-        "description": "Unique (per-cluster) application name for the Trifacta edge node",
-        "trifactaComment": "Do not change this key."
-      },
-      "defaultValue": "trifacta"
-    },
-    "subdomainApplicationURISuffix": {
-      "type": "string",
-      "maxLength": 3,
-      "metadata": {
-        "description": "Unique (per cluster) three-character alphanumeric string used in the application's DNS name."
-      },
-      "defaultValue": "tri"
-    },
-    "DirectoryID": {
-      "type": "string",
-      "metadata": {
-        "description": "Azure Active Directory directory ID for the registered application. Required."
-      },
-      "defaultValue": "<AAD_DIRECTORY_ID>"
-    },
-    "ApplicationID": {
-      "type": "string",
-      "metadata": {
-        "description": "Registered application's ID. Required."
-      },
-      "defaultValue": "<APPLICATION_ID>"
-    },
-    "Secret": {
-      "type": "secureString",
-      "metadata": {
-        "description": "Registered application's key. Required."
-      },
-      "defaultValue": "<APPLICATION_SECRET>"
-    },
-    "KeyVaultUrl": {
-      "type": "string",
-      "metadata": {
-        "description": "Key Vault URL. Required for Azure Data Lake Store access."
-      },
-      "defaultValue": "https://KEY_VAULT_NAME.vault.azure.net/"
-    },
-    "SasToken": {
-      "type": "string",
-      "metadata": {
-        "description": "Shared Access Signature token. Required for Blob Storage access."
-      },
-      "defaultValue": "<WASB_SAS_TOKEN>"
-    }
-  },
-  "variables": {
-    "trifactaVersionShort": "[replace(parameters('trifactaVersion'), '.', '')]",
-    "branch": "master",
-    "baseUri": "[concat('https://raw.githubusercontent.com/trifacta/azure-deploy/', variables('branch'))]",
-    "armTemplateVersion": "1",
-    "trifactaDownloadAccessSignature": "sv=2019-02-02&ss=b&srt=sco&sp=rl&se=2022-02-01T07:59:59Z&st=2020-02-07T17:11:06Z&spr=https&sig=nE5gjnng%2BWMDQSJwDqxSbN5KX3eDsxhFq4aeD6DEL%2B4%3D"
-  },
-  "resources": [
-    {
-      "apiVersion": "2016-09-01",
-      "name": "pid-9ce61f92-f188-470c-b332-cc0804fd8996",
-      "type": "Microsoft.Resources/deployments",
-      "properties": {
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "resources": []
-        }
-      }
-    },
-    {
-      "name": "[concat(parameters('clusterName'), '/', parameters('applicationName'))]",
-      "type": "Microsoft.HDInsight/clusters/applications",
-      "apiVersion": "2015-03-01-preview",
-      "dependsOn": [],
-      "properties": {
-        "marketPlaceIdentifier": "[parameters('galleryPackageIdentity')]",
-        "computeProfile": {
-          "roles": [
-            {
-              "name": "edgenode",
-              "targetInstanceCount": 1,
-              "hardwareProfile": {
-                "vmSize": "[parameters('edgeNodeSize')]"
-              }
-            }
-          ]
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "deploymentName": {
+            "defaultValue": "trifacta-wrangler",
+            "type": "string"
         },
-        "installScriptActions": [
-          {
-            "name": "[concat('trifacta-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
-            "uri": "[concat(variables('baseUri'), '/bin/deploy.sh')]",
-            "parameters": "[concat('-v \"', parameters('trifactaVersion'), '\" -B \"', variables('branch'), '\" -s \"', variables('trifactaDownloadAccessSignature'), '\" -d \"', parameters('DirectoryID'), '\" -a \"', parameters('ApplicationID'), '\" -S \"', parameters('Secret'), '\" -K \"', parameters('KeyVaultUrl'), '\" -t \"', parameters('SasToken'), '\"')]",
-            "roles": ["edgenode"]
-          }
-        ],
-        "uninstallScriptActions": [
-          {
-            "name": "[concat('trifacta-uninstall-', variables('trifactaVersionShort'), '-', variables('armTemplateVersion'), '-', uniquestring(parameters('applicationName')))]",
-            "uri": "[concat(variables('baseUri'), '/bin/uninstall.sh')]",
-            "roles": ["edgenode"]
-          }
-        ],
-        "httpsEndpoints": [
-          {
-            "subDomainSuffix": "[parameters('subdomainApplicationURISuffix')]",
-            "destinationPort": 3005,
-            "accessModes": ["webpage"],
-            "disableGatewayAuth": true
-          }
-        ],
-        "applicationType": "CustomApplication"
-      }
+        "servicePrincipalObjectId": {
+            "type": "securestring",
+            "metadata": {
+                "description": "This is the object ID for the service princpal."
+            }
+        },
+        "location": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "string"
+        },
+        "networkSecurityGroupName": {
+            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-nsg')]",
+            "type": "string"
+        },
+        "sshAccessSourceRange": {
+            "type": "string"
+        },
+        "trifactaAccessSourceRange": {
+            "type": "string"
+        },
+        "publicIpAddressName": {
+            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-pip')]",
+            "type": "string"
+        },
+        "publicIpAddressType": {
+            "defaultValue": "static",
+            "type": "string"
+        },
+        "publicIpAddressSku": {
+            "defaultValue": "Basic",
+            "type": "string"
+        },
+        "virtualMachineName": {
+            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-vm')]",
+            "type": "string"
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "defaultValue": "Standard_E8s_v3"
+        },
+        "adminUsername": {
+            "type": "string"
+        },
+        "sshPublicKey": {
+            "type": "secureString"
+        },
+        "databricksMRGID": {
+            "type": "string",
+            "defaultValue": "[concat(subscription().id, '/resourceGroups/', concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2)))]"
+        },
+        "containerName": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "keyVaultName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-kv')]"
+        },
+        "trifactaVersion": {
+            "type": "string",
+            "allowedValues": [
+                "8.2.100",
+                "7.6.100",
+                "7.1.001"
+            ],
+            "metadata": {
+                "description": "The Linux OS Version for the VM Offer. This will trifacta-marketplace image of this given Linux version."
+            }
+        },
+        "virtualNetwork": {
+            "type": "object",
+            "defaultValue": {
+                "name": "trifacta-wrangler-vnet01",
+                "resourceGroup": "trifacta-rg",
+                "addressPrefixes": [
+                    "10.0.1.0/24"
+                ],
+                "addressPrefix": "10.0.1.0/24",
+                "newOrExisting": "new",
+                "subnets": {
+                    "subnet1": {
+                        "name": "subnet-1",
+                        "addressPrefix": "10.0.1.0/24",
+                        "startAddress": "10.0.1.4"
+                    }
+                }
+            }
+        },
+        "storageAccount": {
+            "type": "object",
+            "defaultValue": {
+                "name": "trifactastorageaccount01",
+                "type": "Standard_LRS",
+                "newOrExisting": "new"
+            }
+        },
+        "imageReferenceTrifactaEnterprise": {
+            "type": "object",
+            "defaultValue": {
+                "publisher": "trifacta",
+                "sku": "wrangler-enterprise",
+                "offer": "wrangler-enterprise-vm"
+            }
+        }
+
+
+    },
+    "variables": {
+        "publicIpAddressId": "[resourceId('Microsoft.Network/publicIpAddresses', parameters('publicIpAddressName'))]",
+        "VNetName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-', parameters('virtualNetwork').name)]",
+        "NICName": "[concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-', parameters('virtualNetwork').name, '-nic')]",
+        "nsgId": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+        "storageBlobContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+        "storageAccountRoleAssignmentName": "[concat(parameters('storageAccount').name, '/Microsoft.Authorization/', guid(uniqueString(parameters('storageAccount').name)))]",
+        "blobServiceContainerName": "[concat(parameters('storageAccount').name, '/default/', if(empty(parameters('containerName')), concat('trifacta-wrangler', substring(uniqueString(resourceGroup().id),0,2)), parameters('containerName')))]",
+        "databricksMRGIDName": "[if(empty(parameters('databricksMRGID')), concat(parameters('deploymentName'), substring(uniqueString(resourceGroup().id),0,2), '-db'), parameters('databricksMRGID'))]"
+
+    },
+    "resources": [{
+            "name": "[variables('NICName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-06-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/', variables('VNetName'))]",
+                "[resourceId('Microsoft.Network/publicIpAddresses/', parameters('publicIpAddressName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [{
+                    "name": "ipconfig1",
+                    "properties": {
+                        "subnet": {
+                            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetName'), parameters('virtualNetwork').subnets.subnet1.name)]"
+                        },
+                        "privateIPAllocationMethod": "Dynamic",
+                        "publicIpAddress": {
+                            "id": "[variables('publicIpAddressId')]"
+                        }
+                    }
+                }],
+                "networkSecurityGroup": {
+                    "id": "[variables('nsgId')]"
+                }
+            }
+        },
+        {
+            "name": "[parameters('networkSecurityGroupName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-06-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [{
+                        "name": "SSH",
+                        "properties": {
+                            "priority": 300,
+                            "protocol": "TCP",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourceAddressPrefix": "[parameters('sshAccessSourceRange')]",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "22"
+                        }
+                    },
+                    {
+                        "name": "Trifacta_Service",
+                        "properties": {
+                            "priority": 200,
+                            "protocol": "TCP",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourceAddressPrefix": "[parameters('trifactaAccessSourceRange')]",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRanges": ["3005", "80", "443"]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "condition": "[equals(parameters('virtualNetwork').newOrExisting, 'new')]",
+            "name": "[variables('VNetName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-06-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": "[array(parameters('virtualNetwork').addressPrefixes)]"
+                    
+                },
+                "subnets": [{
+                    "name": "[parameters('virtualNetwork').subnets.subnet1.name]",
+                    "properties": {
+                        "addressPrefix": "[first(parameters('virtualNetwork').addressPrefixes)]",
+                        "serviceEndpoints": [{
+                            "service": "Microsoft.KeyVault"
+                        }]
+                    }
+                }]
+            }
+        },
+        {
+            "name": "[parameters('publicIpAddressName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2020-06-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+            },
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            }
+        },
+        {
+            "name": "[parameters('virtualMachineName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2020-06-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces/', variables('NICName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "[parameters('imageReferenceTrifactaEnterprise').publisher]",
+                        "offer": "[parameters('imageReferenceTrifactaEnterprise').offer]",
+                        "sku": "[parameters('imageReferenceTrifactaEnterprise').sku]",
+                        "version": "[parameters('trifactaVersion')]"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [{
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('NICName'))]"
+                    }]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachineName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [{
+                                "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                "keyData": "[parameters('sshPublicKey')]"
+                            }]
+                        }
+                    }
+                }
+            },
+            "plan": {
+                "name": "[parameters('imageReferenceTrifactaEnterprise').sku]",
+                "product": "[parameters('imageReferenceTrifactaEnterprise').offer]",
+                "publisher": "[parameters('imageReferenceTrifactaEnterprise').publisher]"
+            }
+        },
+        {
+            "condition": "[equals(parameters('storageAccount').newOrExisting, 'new')]",
+            "name": "[parameters('storageAccount').name]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "location": "[parameters('location')]",
+            "kind": "StorageV2",
+            "sku": {
+                "name": "[parameters('storageAccount').type]"
+            },
+            "properties": {
+                "encryption": {
+                    "keySource": "Microsoft.Storage",
+                    "services": {
+                        "blob": {
+                            "enabled": true
+                        },
+                        "file": {
+                            "enabled": true
+                        }
+                    }
+                },
+                "isHnsEnabled": true,
+                "supportsHttpsTrafficOnly": true
+            }
+        },
+        {
+            "condition": "[equals(parameters('storageAccount').newOrExisting, 'new')]",
+            "name": "[variables('blobServiceContainerName')]",
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2019-06-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccount').name)]"
+            ]
+        },
+        {
+            "name": "[variables('storageAccountRoleAssignmentName')]",
+            "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+            "apiVersion": "2019-04-01-preview",
+            "dependsOn": [
+                "[parameters('storageAccount').name]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobContributor')]",
+                "principalId": "[parameters('servicePrincipalObjectId')]",
+                "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "name": "[parameters('keyVaultName')]",
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "2019-09-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetName'))]"
+            ],
+            "properties": {
+                "enabledForDeployment": true,
+                "enabledForTemplateDeployment": true,
+                "enabledForDiskEncryption": true,
+                "accessPolicies": [{
+                    "tenantId": "[subscription().tenantId]",
+                    "objectId": "[parameters('servicePrincipalObjectId')]",
+                    "permissions": {
+                        "keys": [
+                            "Get",
+                            "List",
+                            "Update",
+                            "Create",
+                            "Import",
+                            "Delete",
+                            "Recover",
+                            "Backup",
+                            "Restore"
+                        ],
+                        "secrets": [
+                            "Get",
+                            "List",
+                            "Set",
+                            "Delete",
+                            "Recover",
+                            "Backup",
+                            "Restore"
+                        ],
+                        "certificates": [
+                            "Get",
+                            "List",
+                            "Update",
+                            "Create",
+                            "Import",
+                            "Delete",
+                            "Recover",
+                            "Backup",
+                            "Restore",
+                            "ManageContacts",
+                            "ManageIssuers",
+                            "GetIssuers",
+                            "ListIssuers",
+                            "SetIssuers",
+                            "DeleteIssuers"
+                        ]
+                    }
+                }],
+                "tenantId": "[subscription().tenantId]",
+                "sku": {
+                    "name": "Standard",
+                    "family": "A"
+                },
+                "networkAcls": {
+                    "defaultAction": "Deny",
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [{
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetName'), parameters('virtualNetwork').subnets.subnet1.name)]",
+                        "ignoreMissingVnetServiceEndpoint": false
+                    }]
+                }
+            }
+        },
+        {
+            "name": "[variables('databricksMRGIDName')]",
+            "type": "Microsoft.Databricks/workspaces",
+            "apiVersion": "2018-04-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "managedResourceGroupId": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('databricksMRGIDName'))]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/', variables('VNetName'))]"
+              ]
+            }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        },
+        "trifactaInstanceName": {
+            "type": "string",
+            "value": "[parameters('virtualMachineName')]"
+        }
     }
-  ],
-  "outputs": {
-    "application": {
-      "type": "object",
-      "value": "[reference(resourceId('Microsoft.HDInsight/clusters/applications/', parameters('clusterName'), parameters('applicationName')))]"
-    }
-  }
 }
